@@ -79,7 +79,14 @@ export default function CreateMarketPage({ onMarketCreated }) {
         body: JSON.stringify({ question: cleanQ }),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(`Server response error (${res.status}): ${text.slice(0, 100)}`);
+      }
+
       if (!res.ok) {
         throw new Error(data.error || 'Validator consultation failed. Please check network connection.');
       }
@@ -159,7 +166,7 @@ export default function CreateMarketPage({ onMarketCreated }) {
       const depositLiquidity = parseGenToWei(initialLiquidity || '1.0');
       const totalValueWei = (BigInt(authorBond) + BigInt(depositLiquidity)).toString();
 
-      setSubmitStep('Awaiting GenLayer AI validator consensus receipt...');
+      setSubmitStep('Broadcasting transaction to GenLayer StudioNet...');
 
       const res = await fetch('/api/relay', {
         method: 'POST',
@@ -175,7 +182,13 @@ export default function CreateMarketPage({ onMarketCreated }) {
         }),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(`Server response error (${res.status}): ${text.slice(0, 100)}`);
+      }
 
       // Check if on-chain validators rejected the market proposition
       if (!res.ok || data.created === false || !data.success) {
@@ -188,6 +201,74 @@ export default function CreateMarketPage({ onMarketCreated }) {
           reason: data.reason || 'NOT_RESOLVABLE',
         });
         setSubmitError(data.error || 'On-chain GenLayer validators rejected this proposition.');
+        return;
+      }
+
+      // If async pending broadcast, poll status until consensus is reached
+      if (data.pending && data.tx_hash) {
+        const txHash = data.tx_hash;
+        setSubmitStep(`Broadcast confirmed (${txHash.slice(0, 10)}...). Awaiting validator consensus...`);
+
+        let attempts = 0;
+        const maxAttempts = 60; // up to 180 seconds
+        const pollInterval = 3000;
+
+        while (attempts < maxAttempts) {
+          await new Promise((r) => setTimeout(r, pollInterval));
+          attempts++;
+
+          try {
+            const statusRes = await fetch(`/api/relay/status/${txHash}`);
+            const statusText = await statusRes.text();
+            let statusData;
+            try {
+              statusData = JSON.parse(statusText);
+            } catch {
+              continue;
+            }
+
+            if (statusData.status === 'PENDING') {
+              setSubmitStep(statusData.message || `Validators verifying specification (${attempts * 3}s elapsed)...`);
+              continue;
+            }
+
+            if (statusData.status === 'REJECTED' || statusData.created === false) {
+              setSubmitStep('');
+              setSubmitting(false);
+              setRejectionDetails({
+                problems: statusData.problems && statusData.problems.length > 0 ? statusData.problems : [statusData.error || 'Resolvability criteria not satisfied.'],
+                suggested_rewrites: statusData.suggested_rewrites || [],
+                refunded_wei: statusData.refunded_wei || '0',
+                reason: statusData.reason || 'NOT_RESOLVABLE',
+              });
+              setSubmitError(statusData.error || 'On-chain GenLayer validators rejected this proposition.');
+              return;
+            }
+
+            if (statusData.status === 'SUCCESS' && statusData.created) {
+              setRejectionDetails(null);
+              setSubmitStep('Validator consensus reached: ACCEPTED');
+              setSubmitSuccess(statusData);
+              setSubmitting(false);
+
+              if (onMarketCreated && statusData.market_id) {
+                setTimeout(() => onMarketCreated(statusData.market_id), 2000);
+              }
+              return;
+            }
+
+            if (statusData.status === 'ERROR' || statusData.status === 'FAILED') {
+              throw new Error(statusData.error || 'Transaction failed on-chain.');
+            }
+          } catch (pollErr) {
+            console.warn('[PollStatus] Warning:', pollErr.message);
+          }
+        }
+
+        // If client polling timed out
+        setSubmitting(false);
+        setSubmitStep('');
+        setSubmitError(`Consensus is still processing on StudioNet for tx ${txHash.slice(0, 10)}... Please refresh or check the Markets Explorer in a moment.`);
         return;
       }
 

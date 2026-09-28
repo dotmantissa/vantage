@@ -658,11 +658,32 @@ function extractContractResult(fullTx) {
     const validators = fullTx?.consensus_data?.validators || [];
     for (const v of validators) {
       if (v?.result) {
-        const decoded = Buffer.from(v.result, 'base64').toString('utf8');
-        const jsonMatch = decoded.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
-        }
+        try {
+          const decoded = Buffer.from(v.result, 'base64').toString('utf8');
+          const jsonMatch = decoded.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (parsed && typeof parsed === 'object') {
+              return parsed;
+            }
+          }
+        } catch {}
+      }
+    }
+    const leaderReceipt = fullTx?.consensus_data?.leader_receipt || [];
+    for (const lr of leaderReceipt) {
+      if (lr?.result) {
+        try {
+          const raw = typeof lr.result === 'string' ? lr.result : JSON.stringify(lr.result);
+          const decoded = Buffer.from(raw, 'base64').toString('utf8');
+          const jsonMatch = decoded.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (parsed && typeof parsed === 'object') {
+              return parsed;
+            }
+          }
+        } catch {}
       }
     }
   } catch (e) {
@@ -702,61 +723,12 @@ async function handleRelayRequest(req, res) {
         value: BigInt(createValueWei || '10000000000000000000'),
       });
 
-      console.log(`[Relay] compile_market tx sent: ${txHash}. Waiting for consensus...`);
-      const receipt = await client.waitForTransactionReceipt({
-        hash: txHash,
-        status: 'ACCEPTED',
-        interval: 2000,
-        retries: 60,
-      });
-
-      console.log(`[Relay] compile_market accepted! Status: ${receipt?.status}`);
-
-      // Extract consensus execution result from validators
-      let contractResult = null;
-      try {
-        const fullTx = await client.getTransaction({ hash: txHash });
-        contractResult = extractContractResult(fullTx);
-        console.log(`[Relay] compile_market consensus result:`, contractResult);
-      } catch (err) {
-        console.warn(`[Relay] Failed to fetch or decode tx consensus payload:`, err.message);
-      }
-
-      // Check if on-chain validators rejected the market proposition
-      if (contractResult && contractResult.created === false) {
-        return res.status(422).json({
-          success: false,
-          created: false,
-          tx_hash: txHash,
-          reason: contractResult.reason || 'NOT_RESOLVABLE',
-          problems: contractResult.problems || [],
-          suggested_rewrites: contractResult.suggested_rewrites || [],
-          refunded_wei: contractResult.refunded_wei || '0',
-          restated_question: contractResult.restated_question || '',
-          error: `On-chain validators rejected compilation: ${(contractResult.problems || []).join('; ') || 'Question failed resolvability gate.'}`,
-        });
-      }
-
-      await syncNow();
-
-      const newMarketId = contractResult?.market_id;
-      let matchedMarket = null;
-      if (newMarketId) {
-        const rows = await sql`SELECT * FROM markets WHERE market_id = ${newMarketId}`;
-        matchedMarket = rows[0] || null;
-      }
-      if (!matchedMarket) {
-        const latestMarkets = await sql`SELECT * FROM markets ORDER BY created_at_chain DESC LIMIT 1`;
-        matchedMarket = latestMarkets[0] || null;
-      }
-
+      console.log(`[Relay] compile_market tx broadcast: ${txHash}. Returning async pending response.`);
       return res.json({
         success: true,
-        created: true,
+        pending: true,
         tx_hash: txHash,
-        status: receipt?.status || 'ACCEPTED',
-        market_id: newMarketId || matchedMarket?.market_id,
-        market: matchedMarket,
+        message: 'Market compilation transaction broadcast to GenLayer StudioNet. Awaiting validator consensus...',
       });
     }
 
@@ -916,6 +888,114 @@ async function handleRelayRequest(req, res) {
  * Transaction Relay: executes on-chain writeContract calls
  */
 router.post('/relay', handleRelayRequest);
+
+/**
+ * Query status of an on-chain transaction
+ */
+async function handleRelayStatusRequest(req, res) {
+  try {
+    const { txHash } = req.params;
+    if (!txHash) {
+      return res.status(400).json({ error: 'Transaction hash is required' });
+    }
+
+    const tx = await client.getTransaction({ hash: txHash });
+    if (!tx) {
+      return res.status(404).json({ error: 'Transaction not found on StudioNet' });
+    }
+
+    const statusCode = Number(tx.status);
+    const statusStr = String(tx.status || tx.statusName || '').toUpperCase();
+    console.log(`[RelayStatus] Tx ${txHash} status: ${tx.status} (${tx.statusName || statusCode})`);
+
+    const isAccepted = statusCode === 5 || statusCode === 7 || statusStr === 'ACCEPTED' || statusStr === 'FINALIZED';
+    const isFailed = statusCode === 6 || statusCode === 8 || statusCode === 12 || statusCode === 13 ||
+      statusStr === 'UNDETERMINED' || statusStr === 'CANCELED' || statusStr === 'VALIDATORS_TIMEOUT' || statusStr === 'LEADER_TIMEOUT';
+
+    if (isFailed) {
+      return res.json({
+        status: 'FAILED',
+        tx_status: statusCode,
+        tx_hash: txHash,
+        error: `Transaction consensus failed on StudioNet with status: ${tx.statusName || tx.status}`,
+      });
+    }
+
+    // Status 5: ACCEPTED or Status 7: FINALIZED (consensus achieved)
+    if (isAccepted) {
+      const contractResult = extractContractResult(tx);
+      console.log(`[RelayStatus] Tx ${txHash} contractResult:`, contractResult);
+
+      if (contractResult && contractResult.created === false) {
+        return res.json({
+          status: 'REJECTED',
+          created: false,
+          tx_hash: txHash,
+          reason: contractResult.reason || 'NOT_RESOLVABLE',
+          problems: contractResult.problems || [],
+          suggested_rewrites: contractResult.suggested_rewrites || [],
+          refunded_wei: contractResult.refunded_wei || '0',
+          restated_question: contractResult.restated_question || '',
+          error: `On-chain validators rejected compilation: ${(contractResult.problems || []).join('; ') || 'Resolvability criteria not satisfied.'}`,
+        });
+      }
+
+      try {
+        await syncNow();
+      } catch (syncErr) {
+        console.warn(`[RelayStatus] Indexer sync error after consensus:`, syncErr.message);
+      }
+
+      const newMarketId = contractResult?.market_id;
+      let matchedMarket = null;
+      if (newMarketId) {
+        try {
+          const rows = await sql`SELECT * FROM markets WHERE market_id = ${newMarketId}`;
+          matchedMarket = rows[0] || null;
+        } catch (dbErr) {
+          console.warn(`[RelayStatus] DB query error:`, dbErr.message);
+        }
+      }
+      if (!matchedMarket) {
+        try {
+          const latestMarkets = await sql`SELECT * FROM markets ORDER BY created_at_chain DESC LIMIT 1`;
+          matchedMarket = latestMarkets[0] || null;
+        } catch (dbErr) {
+          console.warn(`[RelayStatus] DB query fallback error:`, dbErr.message);
+        }
+      }
+
+      return res.json({
+        status: 'SUCCESS',
+        created: true,
+        tx_hash: txHash,
+        market_id: newMarketId || matchedMarket?.market_id,
+        market: matchedMarket,
+      });
+    }
+
+    // Status 0: PENDING, 1: PROPOSING, 2: COMMITTING, 3: REVEALING, 4: FINALIZING
+    const stepLabels = {
+      0: 'Broadcasting transaction across StudioNet...',
+      1: 'Leader node compiling predicate & checking gate...',
+      2: 'AI validators independently verifying specification...',
+      3: 'Consensus votes accumulating across validator nodes...',
+      4: 'Consensus finalized, confirming on ledger...',
+    };
+
+    return res.json({
+      status: 'PENDING',
+      tx_status: statusCode,
+      tx_hash: txHash,
+      message: stepLabels[statusCode] || `Validators verifying specification (status: ${tx.statusName || statusCode})...`,
+    });
+  } catch (err) {
+    console.error('[RelayStatus] Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+router.get('/relay/status/:txHash', handleRelayStatusRequest);
 
 /**
  * Trigger fast indexer sync (also handles forwarded action/method requests)
