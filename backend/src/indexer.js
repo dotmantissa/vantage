@@ -35,17 +35,21 @@ try {
 }
 
 export function getContractAddresses() {
-  if (!deployedContracts) {
-    try {
-      const deployedPath = path.join(rootDir, 'deployed_contracts.json');
-      if (fs.existsSync(deployedPath)) {
-        deployedContracts = JSON.parse(fs.readFileSync(deployedPath, 'utf-8'));
+  try {
+    const deployedPath = path.join(rootDir, 'deployed_contracts.json');
+    if (fs.existsSync(deployedPath)) {
+      const parsed = JSON.parse(fs.readFileSync(deployedPath, 'utf-8'));
+      if (parsed?.contracts?.VantageMarket?.address) {
+        return {
+          charter: parsed.contracts.VantageCharter.address,
+          market: parsed.contracts.VantageMarket.address,
+        };
       }
-    } catch {}
-  }
+    }
+  } catch {}
   return {
-    charter: deployedContracts?.contracts?.VantageCharter?.address || '0xBfB34B0b1dCa954823fBbefBAc815c4136d815e0',
-    market: deployedContracts?.contracts?.VantageMarket?.address || '0x8FA3592290E235099601ABFBA998372A536d36DF',
+    charter: '0xBfB34B0b1dCa954823fBbefBAc815c4136d815e0',
+    market: '0x96767e45874e697e5f2d059729890Ba5478e85b4',
   };
 }
 
@@ -196,45 +200,47 @@ export async function syncNow() {
         args: [],
       });
       const stats = typeof rawCharterStats === 'string' ? JSON.parse(rawCharterStats || '{}') : rawCharterStats;
-      const count = stats.precedent_count || 0;
+      const count = Number(stats?.total_precedents || stats?.precedent_count || 0);
 
-      // Query recent precedents across common tags
-      const sampleTags = ['crypto', 'finance', 'sports', 'weather', 'ethereum', 'bitcoin', 'ai', 'politics', 'general'];
-      for (const tag of sampleTags) {
-        try {
-          const rawMatches = await client.readContract({
-            address: charter,
-            functionName: 'lookup_by_tag',
-            args: [tag, 20],
-          });
-          const parsed = typeof rawMatches === 'string' ? JSON.parse(rawMatches || '{}') : (rawMatches || {});
-          const precedents = parsed.matches || [];
+      // Only query precedent tags if precedents actually exist
+      if (count > 0) {
+        const sampleTags = ['crypto', 'finance', 'sports', 'weather', 'ethereum'];
+        for (const tag of sampleTags) {
+          try {
+            const rawMatches = await client.readContract({
+              address: charter,
+              functionName: 'lookup_by_tag',
+              args: [tag, 20],
+            });
+            const parsed = typeof rawMatches === 'string' ? JSON.parse(rawMatches || '{}') : (rawMatches || {});
+            const precedents = parsed.matches || [];
 
-          for (const p of precedents) {
-            if (!p || !p.precedent_id) continue;
-            await sql`
-              INSERT INTO precedents (
-                precedent_id, market_id, spec_pattern, tags, outcome,
-                reason_code, predicate_type, charter_version, ruling_note,
-                recorded_by, sequence, recorded_at
-              ) VALUES (
-                ${p.precedent_id},
-                ${p.market_id || ''},
-                ${p.spec_pattern || ''},
-                ${JSON.stringify(p.tags || [])}::jsonb,
-                ${String(p.outcome || '')},
-                ${p.reason_code || ''},
-                ${p.predicate_type || ''},
-                ${p.charter_version || 'v1'},
-                ${p.ruling_note || ''},
-                ${p.recorded_by || ''},
-                ${p.sequence || 0},
-                ${p.recorded_at || 0}
-              )
-              ON CONFLICT (precedent_id) DO NOTHING;
-            `;
-          }
-        } catch {}
+            for (const p of precedents) {
+              if (!p || !p.precedent_id) continue;
+              await sql`
+                INSERT INTO precedents (
+                  precedent_id, market_id, spec_pattern, tags, outcome,
+                  reason_code, predicate_type, charter_version, ruling_note,
+                  recorded_by, sequence, recorded_at
+                ) VALUES (
+                  ${p.precedent_id},
+                  ${p.market_id || ''},
+                  ${p.spec_pattern || ''},
+                  ${JSON.stringify(p.tags || [])}::jsonb,
+                  ${String(p.outcome || '')},
+                  ${p.reason_code || ''},
+                  ${p.predicate_type || ''},
+                  ${p.charter_version || 'v1'},
+                  ${p.ruling_note || ''},
+                  ${p.recorded_by || ''},
+                  ${p.sequence || 0},
+                  ${p.recorded_at || 0}
+                )
+                ON CONFLICT (precedent_id) DO NOTHING;
+              `;
+            }
+          } catch {}
+        }
       }
     } catch (e) {
       console.error('Error syncing charter precedents:', e.message);
@@ -249,7 +255,7 @@ export async function syncNow() {
 /**
  * Starts background indexing loop.
  */
-export function startContinuousSync(intervalMs = 6000) {
+export function startContinuousSync(intervalMs = 20000) {
   console.log(`Starting background indexer (polling every ${intervalMs}ms)...`);
   syncNow();
   setInterval(() => {

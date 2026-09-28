@@ -41,7 +41,7 @@ app.get('/', (req, res) => {
 async function startServer() {
   try {
     await initDb();
-    startContinuousSync(6000);
+    startContinuousSync(30000);
 
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`\n========================================`);
