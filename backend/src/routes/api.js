@@ -466,30 +466,84 @@ function recommendSources(q) {
   const sources = [];
   let rationale = '';
 
-  if (/bitcoin|btc|ethereum|eth|solana|sol|crypto|token|defi|nft|market cap|coin|binance|doge/i.test(text)) {
-    sources.push('api.coingecko.com', 'coinmarketcap.com', 'api.binance.com');
-    rationale = 'Live cryptocurrency spot and aggregate market feeds via CoinGecko and CoinMarketCap APIs.';
-  } else if (/fed|federal reserve|interest rate|inflation|cpi|unemployment|gdp|treasury|recession/i.test(text)) {
-    sources.push('www.federalreserve.gov', 'bls.gov', 'bea.gov');
-    rationale = 'Official US Government economic statistical releases and Federal Reserve FOMC announcements.';
-  } else if (/nasa|space|spacex|moon|mars|astronomy|planet|orbit|launch|satellite/i.test(text)) {
-    sources.push('nasa.gov', 'apnews.com', 'reuters.com');
-    rationale = 'Official NASA mission bulletins, space agency records, and verified wire reports (Reuters, AP News).';
-  } else if (/github|stars|repository|repo|release|commit|open source|npm|crates\.io/i.test(text)) {
-    sources.push('api.github.com', 'github.com');
-    rationale = 'GitHub REST API for programmatic verification of repository stargazers, releases, and metrics.';
-  } else if (/weather|temperature|hurricane|rainfall|snow|noaa|celsius|fahrenheit/i.test(text)) {
-    sources.push('api.weather.gov', 'noaa.gov');
-    rationale = 'National Oceanic and Atmospheric Administration (NOAA) & National Weather Service APIs.';
-  } else if (/stock|shares|nasdaq|s&p|dow jones|apple|aapl|tesla|tsla|nvidia|nvda|microsoft|msft|amazon|amzn|google|googl/i.test(text)) {
-    sources.push('finance.yahoo.com', 'sec.gov', 'bloomberg.com');
+  // 1. Weather & Atmospheric Conditions
+  if (/weather|temperature|hurricane|rainfall|rain|precipitation|snow|wind|celsius|fahrenheit|met office|noaa|cyclone|heatwave/i.test(text)) {
+    if (/london|uk|britain|england|scotland|wales|heathrow|manchester|birmingham/i.test(text)) {
+      sources.push('metoffice.gov.uk', 'open-meteo.com', 'ecmwf.int', 'bbc.com', 'accuweather.com');
+      rationale = 'UK Met Office MIDAS/MetSys observational network, ECMWF European forecasts, and BBC Weather.';
+    } else if (/paris|france|berlin|germany|rome|italy|madrid|spain|europe/i.test(text)) {
+      sources.push('open-meteo.com', 'ecmwf.int', 'meteofrance.com', 'dwd.de', 'accuweather.com');
+      rationale = 'European Centre for Medium-Range Weather Forecasts (ECMWF) and national meteorological observation feeds.';
+    } else if (/tokyo|japan|china|beijing|asia/i.test(text)) {
+      sources.push('jma.go.jp', 'open-meteo.com', 'accuweather.com', 'timeanddate.com');
+      rationale = 'Japan Meteorological Agency (JMA), Open-Meteo observational archives, and AccuWeather.';
+    } else if (/us|usa|united states|new york|california|texas|florida|chicago|miami|los angeles|noaa|nws/i.test(text)) {
+      sources.push('api.weather.gov', 'noaa.gov', 'weather.com', 'accuweather.com');
+      rationale = 'National Oceanic and Atmospheric Administration (NOAA) & US National Weather Service (NWS) observation APIs.';
+    } else {
+      sources.push('open-meteo.com', 'noaa.gov', 'wmo.int', 'weather.com', 'accuweather.com');
+      rationale = 'World Meteorological Organization (WMO) Global Surface Network and Open-Meteo historical observations.';
+    }
+  }
+  // 2. Cryptocurrencies & Digital Assets
+  else if (/bitcoin|btc|ethereum|eth|solana|sol|crypto|token|defi|nft|market cap|coin|binance|doge|memecoin|uniswap|polygon/i.test(text)) {
+    sources.push('api.coingecko.com', 'coinmarketcap.com', 'api.binance.com', 'coindesk.com');
+    rationale = 'Live cryptocurrency spot and aggregate market feeds via CoinGecko, CoinMarketCap, and Binance APIs.';
+  }
+  // 3. Central Banking, Interest Rates & Macroeconomics
+  else if (/fed|federal reserve|interest rate|inflation|cpi|unemployment|gdp|treasury|recession|fomc|central bank/i.test(text)) {
+    if (/bank of england|boe|uk|gilt/i.test(text)) {
+      sources.push('bankofengland.co.uk', 'ons.gov.uk', 'reuters.com', 'bloomberg.com');
+      rationale = 'Bank of England Monetary Policy Committee records and UK Office for National Statistics (ONS).';
+    } else if (/ecb|european central bank|eurozone/i.test(text)) {
+      sources.push('ecb.europa.eu', 'bloomberg.com', 'reuters.com', 'ft.com');
+      rationale = 'European Central Bank (ECB) Governing Council announcements and Eurostat statistical streams.';
+    } else {
+      sources.push('www.federalreserve.gov', 'bls.gov', 'bea.gov', 'treasury.gov');
+      rationale = 'Official US Government economic statistical releases and Federal Reserve FOMC announcements.';
+    }
+  }
+  // 4. Space, Astronomy & Aerospace
+  else if (/nasa|space|spacex|moon|mars|astronomy|planet|orbit|launch|satellite|telescope|esa|artemis|exoplanet/i.test(text)) {
+    sources.push('nasa.gov', 'esa.int', 'apnews.com', 'reuters.com');
+    rationale = 'Official NASA and European Space Agency (ESA) bulletins, complemented by verified wire reports (Reuters, AP News).';
+  }
+  // 5. Software, Open Source & Developer Repos
+  else if (/github|stars|repository|repo|release|commit|open source|npm|crates\.io|pypi|pull request/i.test(text)) {
+    sources.push('api.github.com', 'github.com', 'npmjs.com', 'crates.io', 'pypi.org');
+    rationale = 'GitHub REST API and package registry feeds for programmatic verification of releases, stargazers, and commits.';
+  }
+  // 6. Equities, Public Companies & Corporate Filings
+  else if (/stock|shares|nasdaq|s&p|dow jones|apple|aapl|tesla|tsla|nvidia|nvda|microsoft|msft|amazon|amzn|google|googl|meta|sec|form 8-k|10-k|earnings/i.test(text)) {
+    sources.push('sec.gov', 'bloomberg.com', 'finance.yahoo.com', 'reuters.com', 'wsj.com');
     rationale = 'US SEC EDGAR corporate filings and verified equity market pricing streams.';
-  } else {
-    sources.push('en.wikipedia.org', 'apnews.com', 'reuters.com');
-    rationale = 'Consensus aggregation across global news wires (Reuters, Associated Press) and encyclopedia records.';
+  }
+  // 7. Sports (Football, Basketball, Soccer, Tennis, Olympics)
+  else if (/champions league|premier league|world cup|olympics|nba|nfl|fifa|uefa|formula 1|f1|tennis|grand slam|super bowl/i.test(text)) {
+    sources.push('espn.com', 'bbc.com', 'reuters.com', 'uefa.com', 'apnews.com');
+    rationale = 'Official sports federation records (UEFA/FIFA/NBA) and verified wire sports desks (BBC Sport, ESPN, Reuters).';
+  }
+  // 8. Elections, Politics & Legislation
+  else if (/president|election|vote|senate|congress|parliament|prime minister|governor|court|supreme court/i.test(text)) {
+    sources.push('reuters.com', 'apnews.com', 'bbc.com', 'ballotpedia.org');
+    rationale = 'Verified neutral global wire services (Reuters, AP News, BBC) and official electoral registries.';
+  }
+  // 9. General News & Fact Verification Fallback
+  else {
+    sources.push('reuters.com', 'apnews.com', 'bbc.com', 'en.wikipedia.org');
+    rationale = 'Consensus aggregation across global neutral news wires (Reuters, Associated Press) and verified public records.';
   }
 
-  return { sources, rationale };
+  // Also include any specific web domains explicitly written into the user's question
+  const domainMatches = text.match(/\b([a-z0-9-]+\.(?:gov|org|com|io|net|int|co\.uk))\b/gi) || [];
+  domainMatches.forEach((d) => {
+    const clean = d.toLowerCase();
+    if (!sources.includes(clean)) {
+      sources.unshift(clean);
+    }
+  });
+
+  return { sources: Array.from(new Set(sources)).slice(0, 5), rationale };
 }
 
 /**
@@ -539,9 +593,32 @@ function assessResolvability(q) {
     };
   }
 
+  // Constructive optimization suggestions for vague observation benchmarks
+  let suggestedRefinement = null;
+  let optimizationTip = null;
+
+  // Weather station vagueness check
+  if (/weather|rain|precipitation|snow|temperature/i.test(text)) {
+    if (/\b(?:at\s+)?a\s+(?:central\s+)?[a-z\s]*weather\s+station\b/i.test(text) || /\bsomewhere\s+in\b/i.test(text) || /\ba\s+local\s+station\b/i.test(text)) {
+      if (/london/i.test(text)) {
+        suggestedRefinement = text
+          .replace(/a\s+weather\s+dataset\s+retrievable\s+from\s+an\s+allowed\s+source/gi, 'official meteorological observations')
+          .replace(/\b(?:at\s+)?a\s+(?:central\s+)?london\s+weather\s+station\b/gi, 'at the London St. James’s Park station (UK Met Office)')
+          .replace(/\b(?:at\s+)?a\s+(?:central\s+)?weather\s+station\b/gi, 'at the London St. James’s Park station (UK Met Office)');
+        optimizationTip = 'Specifying the official primary observation point (London St. James’s Park) guarantees 100% agreement across all independent GenLayer validator nodes.';
+      } else if (/new york|nyc/i.test(text)) {
+        suggestedRefinement = text
+          .replace(/\b(?:at\s+)?a\s+(?:central\s+)?[a-z\s]*weather\s+station\b/gi, 'at the NYC Central Park station (KNYC)');
+        optimizationTip = 'Specifying NYC Central Park (KNYC) ensures unanimous consensus from NOAA and NWS oracles.';
+      }
+    }
+  }
+
   return {
     resolvable: true,
-    confidence: 0.96,
+    confidence: suggestedRefinement ? 0.92 : 0.98,
+    suggested_refinement: suggestedRefinement,
+    optimization_tip: optimizationTip,
   };
 }
 
@@ -556,7 +633,7 @@ router.post('/validate-market', async (req, res) => {
       return res.status(400).json({ error: 'Question string is required' });
     }
 
-    const { resolvable, reason, confidence } = assessResolvability(question);
+    const { resolvable, reason, confidence, suggested_refinement, optimization_tip } = assessResolvability(question);
     if (!resolvable) {
       return res.json({
         resolvable: false,
@@ -586,6 +663,8 @@ router.post('/validate-market', async (req, res) => {
       predicate_type: isNumeric ? 'numeric' : 'event',
       sources,
       source_rationale: rationale,
+      suggested_refinement,
+      optimization_tip,
       timeline_detected: timeline.detected,
       timeline_text: timeline.text,
       detected_close_iso: defaultCloseIso,

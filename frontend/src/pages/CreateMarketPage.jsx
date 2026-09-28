@@ -17,7 +17,9 @@ import {
   ChevronDown,
   ChevronUp,
   ExternalLink,
-  Plus
+  Plus,
+  X,
+  AlertTriangle
 } from 'lucide-react';
 import { parseGenToWei, formatGen } from '../lib/contracts';
 
@@ -44,8 +46,8 @@ export default function CreateMarketPage({ onMarketCreated }) {
   // Stage 2: Parameters (derived by validators or configured by user)
   const [closeDate, setCloseDate] = useState('');
   const [initialLiquidity, setInitialLiquidity] = useState('1.0');
-  const [extraSources, setExtraSources] = useState('');
-  const [showExtraSources, setShowExtraSources] = useState(false);
+  const [selectedSources, setSelectedSources] = useState([]);
+  const [customDomainInput, setCustomDomainInput] = useState('');
 
   // Submission state
   const [submitting, setSubmitting] = useState(false);
@@ -55,9 +57,9 @@ export default function CreateMarketPage({ onMarketCreated }) {
   const [rejectionDetails, setRejectionDetails] = useState(null);
 
   // Stage 1: Consult validators on the question
-  const handleConsultValidators = async (e) => {
-    if (e) e.preventDefault();
-    const cleanQ = question.trim();
+  const handleConsultValidators = async (e, overrideQ = null) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const cleanQ = (overrideQ !== null ? overrideQ : question).trim();
     if (!cleanQ) {
       setValidationError('Please enter a prediction market question in plain English.');
       return;
@@ -92,6 +94,7 @@ export default function CreateMarketPage({ onMarketCreated }) {
       }
 
       setValidationResult(data);
+      setSelectedSources(data.sources || []);
 
       if (data.resolvable) {
         // If question specified a timeline, auto-populate it
@@ -127,6 +130,18 @@ export default function CreateMarketPage({ onMarketCreated }) {
     setCloseDate(d.toISOString().slice(0, 16));
   };
 
+  const addCustomSource = () => {
+    const domain = customDomainInput.trim().toLowerCase().replace(/^https?:\/\//, '').split('/')[0];
+    if (domain && !selectedSources.includes(domain)) {
+      setSelectedSources([...selectedSources, domain]);
+      setCustomDomainInput('');
+    }
+  };
+
+  const removeSource = (domainToRemove) => {
+    setSelectedSources(selectedSources.filter((d) => d !== domainToRemove));
+  };
+
   // Stage 2: Compile & Publish on GenLayer StudioNet
   const handleCompileAndPublish = async () => {
     if (!question.trim()) {
@@ -135,6 +150,10 @@ export default function CreateMarketPage({ onMarketCreated }) {
     }
     if (!closeDate) {
       setSubmitError('Please specify the market closing date and time.');
+      return;
+    }
+    if (selectedSources.length < 3) {
+      setSubmitError(`At least 3 independent source domains are required for on-chain consensus (currently ${selectedSources.length}). Please add more sources.`);
       return;
     }
 
@@ -151,17 +170,6 @@ export default function CreateMarketPage({ onMarketCreated }) {
         throw new Error('Market close time must be in the future.');
       }
 
-      // Combine validator-selected sources with any extra sources
-      const combinedSources = [...(validationResult?.sources || [])];
-      if (extraSources.trim()) {
-        extraSources.split(',').forEach((s) => {
-          const clean = s.trim().toLowerCase();
-          if (clean && !combinedSources.includes(clean)) {
-            combinedSources.push(clean);
-          }
-        });
-      }
-
       const authorBond = parseGenToWei('5.0');
       const depositLiquidity = parseGenToWei(initialLiquidity || '1.0');
       const totalValueWei = (BigInt(authorBond) + BigInt(depositLiquidity)).toString();
@@ -176,7 +184,7 @@ export default function CreateMarketPage({ onMarketCreated }) {
           question: question.trim(),
           close_time: closeTimestamp,
           seed_liquidity_wei: depositLiquidity,
-          extra_sources_csv: combinedSources.join(','),
+          extra_sources_csv: selectedSources.join(','),
           value_wei: totalValueWei,
           author: userAddress || '0xBC1399c55538eC034d4Da550C03c34Ae0C357f53',
         }),
@@ -478,6 +486,7 @@ export default function CreateMarketPage({ onMarketCreated }) {
                             setQuestion(validationResult.suggested_rewrite);
                             setValidationResult(null);
                             setValidationError(null);
+                            handleConsultValidators(null, validationResult.suggested_rewrite);
                           }}
                           style={{
                             display: 'inline-flex',
@@ -502,6 +511,59 @@ export default function CreateMarketPage({ onMarketCreated }) {
                     <p style={{ fontSize: '0.78rem', color: 'var(--ink-muted)', marginTop: 8 }}>
                       <strong>Tip:</strong> Re-phrase your question around verifiable market numbers, official announcements, or empirical event records with a specific calendar date.
                     </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Validator Optimization Suggestion */}
+              {validationResult?.suggested_refinement && (
+                <div style={{
+                  padding: 16,
+                  borderRadius: 'var(--radius-control)',
+                  background: 'rgba(114, 152, 119, 0.12)',
+                  border: '1px solid var(--sage)',
+                  display: 'flex',
+                  gap: 12,
+                  alignItems: 'flex-start',
+                }}>
+                  <Sparkles size={20} color="var(--sage)" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <h4 style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--ink)' }}>
+                        Validator Optimization Suggestion
+                      </h4>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--forest)', fontWeight: 600 }}>
+                        RECOMMENDED
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--ink-muted)', marginTop: 4, marginBottom: 10, lineHeight: 1.45 }}>
+                      {validationResult.optimization_tip || 'Specifying the official primary observation point ensures guaranteed consensus across all validator nodes.'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuestion(validationResult.suggested_refinement);
+                        handleConsultValidators(null, validationResult.suggested_refinement);
+                      }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '8px 14px',
+                        borderRadius: 'var(--radius-control)',
+                        background: 'var(--forest)',
+                        color: '#fff',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        border: 'none',
+                        cursor: 'pointer',
+                        boxShadow: 'var(--shadow-subtle)',
+                      }}
+                    >
+                      <Sparkles size={14} />
+                      <span>Use Optimized Formulation: "{validationResult.suggested_refinement.slice(0, 68)}..."</span>
+                      <ArrowRight size={14} />
+                    </button>
                   </div>
                 </div>
               )}
@@ -618,16 +680,16 @@ export default function CreateMarketPage({ onMarketCreated }) {
                 Validators evaluated data fetchability and selected the following live web domains to resolve this question without human intervention:
               </p>
 
-              {/* Recommended Sources Badges */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
-                {(validationResult?.sources || []).map((domain, idx) => (
+              {/* Selected Sources Badges with remove buttons */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                {selectedSources.map((domain, idx) => (
                   <div
                     key={idx}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: 6,
-                      padding: '6px 12px',
+                      padding: '6px 10px',
                       borderRadius: 'var(--radius-control)',
                       background: 'var(--paper-sunk)',
                       border: 'var(--border-rule)',
@@ -638,13 +700,139 @@ export default function CreateMarketPage({ onMarketCreated }) {
                   >
                     <CheckCircle2 size={14} color="var(--sage)" />
                     <span>{domain}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeSource(domain)}
+                      title={`Remove ${domain}`}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--ink-muted)',
+                        cursor: 'pointer',
+                        padding: '0 2px',
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <X size={13} />
+                    </button>
                   </div>
                 ))}
               </div>
 
+              {/* Quorum Warning / Success Status */}
+              {selectedSources.length < 3 ? (
+                <div style={{
+                  padding: '8px 12px',
+                  borderRadius: 'var(--radius-control)',
+                  background: 'rgba(215, 60, 60, 0.08)',
+                  border: '1px solid rgba(215, 60, 60, 0.35)',
+                  color: '#c53030',
+                  fontSize: '0.80rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  marginBottom: 12,
+                }}>
+                  <AlertTriangle size={15} style={{ flexShrink: 0 }} />
+                  <span>
+                    <strong>Quorum Warning:</strong> GenLayer Charter v1 requires a minimum of 3 independent source domains (currently {selectedSources.length} selected). Please add at least {3 - selectedSources.length} more source below.
+                  </span>
+                </div>
+              ) : (
+                <div style={{
+                  padding: '6px 10px',
+                  borderRadius: 'var(--radius-control)',
+                  background: 'rgba(114, 152, 119, 0.10)',
+                  border: '1px solid rgba(114, 152, 119, 0.3)',
+                  color: 'var(--forest)',
+                  fontSize: '0.78rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  marginBottom: 12,
+                }}>
+                  <CheckCircle2 size={14} color="var(--sage)" />
+                  <span>Quorum threshold met ({selectedSources.length} independent domains configured).</span>
+                </div>
+              )}
+
+              {/* Quick Add Domain Presets */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14, alignItems: 'center' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--ink-muted)' }}>Quick add:</span>
+                {['metoffice.gov.uk', 'open-meteo.com', 'ecmwf.int', 'bbc.com', 'reuters.com', 'apnews.com', 'bloomberg.com', 'sec.gov', 'noaa.gov', 'api.coingecko.com']
+                  .filter((d) => !selectedSources.includes(d))
+                  .slice(0, 5)
+                  .map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setSelectedSources([...selectedSources, preset])}
+                      style={{
+                        fontSize: '0.72rem',
+                        padding: '3px 8px',
+                        borderRadius: 'var(--radius-control)',
+                        background: 'var(--paper)',
+                        border: 'var(--border-rule)',
+                        color: 'var(--sage)',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                      }}
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+              </div>
+
+              {/* Custom Domain Input */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                <input
+                  type="text"
+                  value={customDomainInput}
+                  onChange={(e) => setCustomDomainInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addCustomSource();
+                    }
+                  }}
+                  placeholder="Add custom domain (e.g. data.gov.uk)"
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius-control)',
+                    border: 'var(--border-rule)',
+                    background: 'var(--paper-sunk)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.82rem',
+                    color: 'var(--ink)',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={addCustomSource}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: 'var(--radius-control)',
+                    background: 'var(--paper-sunk)',
+                    border: 'var(--border-rule)',
+                    color: 'var(--ink)',
+                    fontSize: '0.80rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  <Plus size={14} />
+                  Add
+                </button>
+              </div>
+
               {/* Rationale Quote */}
               {validationResult?.source_rationale && (
-                <div className="legal-well" style={{ fontSize: '0.82rem', color: 'var(--ink)', marginBottom: 14 }}>
+                <div className="legal-well" style={{ fontSize: '0.82rem', color: 'var(--ink)' }}>
                   <span style={{
                     display: 'block',
                     fontSize: '0.70rem',
@@ -657,52 +845,6 @@ export default function CreateMarketPage({ onMarketCreated }) {
                   {validationResult.source_rationale}
                 </div>
               )}
-
-              {/* Advanced: Optional Extra Domains */}
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setShowExtraSources(!showExtraSources)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    fontSize: '0.78rem',
-                    color: 'var(--ink-muted)',
-                    cursor: 'pointer',
-                    background: 'none',
-                    border: 'none',
-                    padding: 0,
-                  }}
-                >
-                  {showExtraSources ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                  <span>{showExtraSources ? 'Hide custom source domains' : '+ Add extra source domains (Optional)'}</span>
-                </button>
-
-                {showExtraSources && (
-                  <div style={{ marginTop: 10 }}>
-                    <input
-                      type="text"
-                      value={extraSources}
-                      onChange={(e) => setExtraSources(e.target.value)}
-                      placeholder="e.g. data.example.com, feeds.oracle.org"
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        borderRadius: 'var(--radius-control)',
-                        border: 'var(--border-rule)',
-                        background: 'var(--paper-sunk)',
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '0.82rem',
-                        color: 'var(--ink)',
-                      }}
-                    />
-                    <span style={{ fontSize: '0.72rem', color: 'var(--ink-muted)', marginTop: 4, display: 'block' }}>
-                      Comma-separated extra domains to include in the validator scrape whitelist.
-                    </span>
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Timeline & Close Time */}
@@ -928,7 +1070,7 @@ export default function CreateMarketPage({ onMarketCreated }) {
                       Quorum Threshold:
                     </span>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.86rem', fontWeight: 600, color: 'var(--ink)' }}>
-                      2 of {Math.max((validationResult?.sources?.length || 2), 2)} sources
+                      2 of {Math.max(selectedSources.length, 3)} sources
                     </div>
                   </div>
                 </div>
@@ -969,12 +1111,12 @@ export default function CreateMarketPage({ onMarketCreated }) {
                 <button
                   type="button"
                   onClick={handleCompileAndPublish}
-                  disabled={submitting}
+                  disabled={submitting || selectedSources.length < 3}
                   style={{
                     width: '100%',
                     padding: '14px',
-                    background: submitting ? 'var(--paper-sunk)' : 'var(--ink)',
-                    color: submitting ? 'var(--ink-muted)' : 'var(--paper)',
+                    background: (submitting || selectedSources.length < 3) ? 'var(--paper-sunk)' : 'var(--ink)',
+                    color: (submitting || selectedSources.length < 3) ? 'var(--ink-muted)' : 'var(--paper)',
                     borderRadius: 'var(--radius-control)',
                     fontWeight: 600,
                     fontSize: '0.90rem',
@@ -982,12 +1124,16 @@ export default function CreateMarketPage({ onMarketCreated }) {
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 8,
-                    cursor: submitting ? 'not-allowed' : 'pointer',
+                    cursor: (submitting || selectedSources.length < 3) ? 'not-allowed' : 'pointer',
                     border: 'none',
                     marginTop: 6,
                   }}
                 >
-                  {submitting ? 'Compiling on GenLayer StudioNet...' : 'Compile & Publish Market'}
+                  {submitting
+                    ? 'Compiling on GenLayer StudioNet...'
+                    : selectedSources.length < 3
+                    ? `Select at least 3 sources (${selectedSources.length}/3)`
+                    : 'Compile & Publish Market'}
                   <ArrowRight size={16} />
                 </button>
 
@@ -1083,6 +1229,7 @@ export default function CreateMarketPage({ onMarketCreated }) {
                                 setStage(1);
                                 setRejectionDetails(null);
                                 setSubmitError(null);
+                                handleConsultValidators(null, rw);
                               }}
                               style={{
                                 textAlign: 'left',

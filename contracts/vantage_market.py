@@ -721,10 +721,15 @@ Produce JSON with exactly these keys:
   issues              list of specific reasons it cannot be settled, empty if fine
   suggested_rewrites  if not resolvable, 1 to 3 concrete better questions
 
-Be strict. A question that depends on private data, on intent, on a source outside
-the allowed list, or on a deadline you cannot pin to a timestamp is NOT resolvable.
-Say so plainly rather than producing a spec that will void later and cost the author
-their bond."""
+Constructively interpret the question to synthesize a resolvable specification whenever possible.
+If the author describes a real-world verifiable event with natural or slightly colloquial phrasing
+(such as 'a weather station in London', 'Ethereum reaches $4k', 'NASA announces an exoplanet'),
+use `restated_question` and `predicate` to constructively specify the canonical standard
+primary benchmark (e.g., the primary official observation station such as London St. James's Park
+or London Heathrow, or standard pricing benchmark) and select the best domains from the allowed list.
+Only mark `resolvable: false` if the question is inherently unfalsifiable, depends on non-public
+private data or subjective personal taste, lacks any objective benchmark, or if none of the allowed
+sources can possibly supply the required data."""
 
     def _compile_once(self, question: str, allowed_domains: list, charter: dict, precedents: list) -> dict:
         raw = gl.nondet.exec_prompt(
