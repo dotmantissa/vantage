@@ -1,0 +1,7 @@
+requirements.txt
+contracts
+tests
+.venv
+.pytest_cache
+deploy
+artifacts

@@ -8,7 +8,7 @@
     "dev:backend": "node backend/src/server.js",
     "dev:frontend": "npm --prefix frontend run dev",
     "dev": "concurrently -n backend,frontend -c green,cyan \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "build": "npm --prefix frontend run build",
+    "build": "npm --prefix frontend install && npm --prefix frontend run build",
     "deploy:contracts": "node deploy/deploy.mjs",
     "lint": "eslint .",
     "lint:contracts": "genvm-lint check contracts/vantage_charter.py && genvm-lint check contracts/vantage_market.py",

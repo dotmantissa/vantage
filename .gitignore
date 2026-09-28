@@ -42,3 +42,4 @@ pnpm-debug.log*
 
 # Internal working notes
 .task-checklist.md
+.env*
