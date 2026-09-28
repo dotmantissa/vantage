@@ -360,6 +360,21 @@ router.get('/precedents', async (req, res) => {
   }
 });
 
+const MONTH_MAP = {
+  jan: 0, january: 0,
+  feb: 1, february: 1,
+  mar: 2, march: 2,
+  apr: 3, april: 3,
+  may: 4,
+  jun: 5, june: 5,
+  jul: 6, july: 6,
+  aug: 7, august: 7,
+  sep: 8, sept: 8, september: 8,
+  oct: 9, october: 9,
+  nov: 10, november: 10,
+  dec: 11, december: 11
+};
+
 /**
  * Natural language timeline parser
  */
@@ -367,18 +382,46 @@ function parseTimeline(q) {
   const now = new Date();
   const currentYear = now.getFullYear();
 
-  // 1. Month Day Year e.g. "December 31, 2026" or "Dec 31 2026" or "December 31"
+  // 1. Day Month Year e.g. "25th December, 2026", "25 Dec 2026", "25th of December 2026", "before 25th December, 2026"
+  const dmyRegex = /(?:by|before|on|until)?\s*\b(\d{1,2})(?:st|nd|rd|th)?\s*(?:of\s*)?(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?),?\s*(\d{4})?\b/i;
+  const dmyMatch = q.match(dmyRegex);
+  if (dmyMatch) {
+    const day = parseInt(dmyMatch[1], 10);
+    const monthKey = dmyMatch[2].toLowerCase();
+    const month = MONTH_MAP[monthKey];
+    const year = dmyMatch[3] ? parseInt(dmyMatch[3], 10) : currentYear;
+    if (day >= 1 && day <= 31 && month !== undefined) {
+      const d = new Date(Date.UTC(year, month, day, 23, 59, 0));
+      if (!isNaN(d.getTime())) return { detected: true, date: d, text: dmyMatch[0].trim() };
+    }
+  }
+
+  // 2. Month Day Year e.g. "December 31, 2026" or "Dec 31 2026"
   const mdyRegex = /(?:by|before|on|until)?\s*\b(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s*(\d{4})?\b/i;
   const mdyMatch = q.match(mdyRegex);
   if (mdyMatch) {
-    const monthStr = mdyMatch[1];
+    const monthKey = mdyMatch[1].toLowerCase();
+    const month = MONTH_MAP[monthKey];
     const day = parseInt(mdyMatch[2], 10);
     const year = mdyMatch[3] ? parseInt(mdyMatch[3], 10) : currentYear;
-    const d = new Date(`${monthStr} ${day}, ${year} 23:59:00 UTC`);
-    if (!isNaN(d.getTime())) return { detected: true, date: d, text: mdyMatch[0].trim() };
+    if (day >= 1 && day <= 31 && month !== undefined) {
+      const d = new Date(Date.UTC(year, month, day, 23, 59, 0));
+      if (!isNaN(d.getTime())) return { detected: true, date: d, text: mdyMatch[0].trim() };
+    }
   }
 
-  // 2. Quarters e.g. "end of Q4 2026" or "Q1 2027"
+  // 3. ISO Date e.g. "2026-12-25" or "before 2026-12-31"
+  const isoRegex = /(?:by|before|on|until)?\s*\b(\d{4})-(\d{2})-(\d{2})\b/i;
+  const isoMatch = q.match(isoRegex);
+  if (isoMatch) {
+    const year = parseInt(isoMatch[1], 10);
+    const month = parseInt(isoMatch[2], 10) - 1;
+    const day = parseInt(isoMatch[3], 10);
+    const d = new Date(Date.UTC(year, month, day, 23, 59, 0));
+    if (!isNaN(d.getTime())) return { detected: true, date: d, text: isoMatch[0].trim() };
+  }
+
+  // 4. Quarters e.g. "end of Q4 2026" or "Q1 2027"
   const qRegex = /\b(Q[1-4])\s*(?:of\s*)?(\d{4})\b/i;
   const qMatch = q.match(qRegex);
   if (qMatch) {
@@ -392,33 +435,24 @@ function parseTimeline(q) {
     return { detected: true, date: d, text: qMatch[0].trim() };
   }
 
-  // 3. Month Year e.g. "by November 2026"
-  const myRegex = /(?:by|before|in|until)\s+\b(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{4})\b/i;
+  // 5. Month Year e.g. "by November 2026" or "by end of December 2026"
+  const myRegex = /(?:by|before|in|until)?\s*(?:end\s+of\s+)?\b(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{4})\b/i;
   const myMatch = q.match(myRegex);
   if (myMatch) {
-    const monthStr = myMatch[1];
+    const monthKey = myMatch[1].toLowerCase();
+    const month = MONTH_MAP[monthKey];
     const year = parseInt(myMatch[2], 10);
-    const d = new Date(`${monthStr} 1, ${year} 23:59:00 UTC`);
-    const lastDay = new Date(Date.UTC(year, d.getUTCMonth() + 1, 0, 23, 59, 0));
+    const lastDay = new Date(Date.UTC(year, month + 1, 0, 23, 59, 0));
     return { detected: true, date: lastDay, text: myMatch[0].trim() };
   }
 
-  // 4. Year e.g. "by 2027" or "by end of 2026"
+  // 6. Year e.g. "by 2027" or "by end of 2026"
   const yrRegex = /(?:by|before|until)(?:\s+end\s+of)?\s+(\d{4})\b/i;
   const yrMatch = q.match(yrRegex);
   if (yrMatch) {
     const year = parseInt(yrMatch[1], 10);
     const d = new Date(Date.UTC(year, 11, 31, 23, 59, 0));
     return { detected: true, date: d, text: yrMatch[0].trim() };
-  }
-
-  // 5. In N days
-  const inDaysRegex = /(?:in|within|next)\s+(\d+)\s+days\b/i;
-  const inDaysMatch = q.match(inDaysRegex);
-  if (inDaysMatch) {
-    const days = parseInt(inDaysMatch[1], 10);
-    const d = new Date(now.getTime() + days * 86400000);
-    return { detected: true, date: d, text: inDaysMatch[0].trim() };
   }
 
   return { detected: false, date: null, text: null };
