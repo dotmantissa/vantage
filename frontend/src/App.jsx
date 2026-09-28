@@ -104,7 +104,6 @@ export default function App() {
           </div>
           <div style={{ display: 'flex', gap: 16 }}>
             <span>StudioNet (61999)</span>
-            <span>Design Seed: 1790593893576409612</span>
           </div>
         </div>
       </footer>
