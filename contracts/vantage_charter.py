@@ -36,7 +36,8 @@ case law.
 
 import json
 import hashlib
-from datetime import datetime, timezone
+import datetime as _dt
+from datetime import timezone
 
 from genlayer import *
 
@@ -143,20 +144,17 @@ class VantageCharter(gl.Contract):
 
     def _now(self) -> u64:
         try:
-            raw = getattr(gl, "message_raw", None)
-            if raw is None:
-                raw = getattr(gl.message, "raw", {})
-            if isinstance(raw, dict) and "datetime" in raw:
-                stamp = str(raw["datetime"]).strip()
-                if stamp:
+            return u64(int(_dt.datetime.now(timezone.utc).timestamp()))
+        except Exception:
+            try:
+                raw = getattr(gl, "message_raw", None) or getattr(gl.message, "raw", {})
+                if isinstance(raw, dict) and "datetime" in raw:
+                    stamp = str(raw["datetime"]).strip()
                     if stamp.endswith("Z"):
                         stamp = stamp[:-1] + "+00:00"
-                    parsed = datetime.fromisoformat(stamp)
-                    if parsed.tzinfo is None:
-                        parsed = parsed.replace(tzinfo=timezone.utc)
-                    return u64(int(parsed.timestamp()))
-            return u64(int(datetime.now(timezone.utc).timestamp()))
-        except Exception:
+                    return u64(int(_dt.datetime.fromisoformat(stamp).timestamp()))
+            except Exception:
+                pass
             return u64(0)
 
     def _owner_only(self) -> None:
