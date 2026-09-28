@@ -1,0 +1,37 @@
+{
+  "name": "vantage",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "A prediction market built around resolution, settled by GenLayer Intelligent Contract consensus.",
+  "scripts": {
+    "dev:backend": "node backend/src/server.js",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev": "concurrently -n backend,frontend -c green,cyan \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build": "npm --prefix frontend install && npm --prefix frontend run build",
+    "deploy:contracts": "node deploy/deploy.mjs",
+    "lint": "eslint .",
+    "lint:contracts": "genvm-lint check contracts/vantage_charter.py && genvm-lint check contracts/vantage_market.py",
+    "test:contracts": "pytest tests/direct -v",
+    "test:integration": "gltest tests/integration -v -s --network studionet",
+    "test": "npm run lint:contracts && npm run test:contracts"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "@privy-io/server-auth": "^1.18.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "ethers": "^6.13.5",
+    "express": "^4.21.2",
+    "genlayer-js": "^1.1.8",
+    "undici": "^8.10.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.19.0",
+    "concurrently": "^9.1.2",
+    "eslint": "^9.19.0",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "globals": "^15.14.0"
+  }
+}

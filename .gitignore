@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+*.pem
+.netrc
+
+# Build artifacts
+dist/
+build/
+out/
+.next/
+.turbo/
+
+# Test caches
+.pytest_cache/
+.gltest_cache/
+artifacts/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Editor and system
+.DS_Store
+.idea/
+.vscode/
+
+# Deployment tooling
+.vercel
+
+# Internal working notes
+.task-checklist.md
