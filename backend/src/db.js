@@ -117,12 +117,24 @@ export async function initDb() {
     );
   `;
 
+  await sql`
+    CREATE TABLE IF NOT EXISTS positions (
+      market_id VARCHAR(64) NOT NULL,
+      holder VARCHAR(64) NOT NULL,
+      shares JSONB NOT NULL DEFAULT '{}'::jsonb,
+      lp_shares NUMERIC(78, 0) NOT NULL DEFAULT 0,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (market_id, holder)
+    );
+  `;
+
   // Indexes for fast querying
   await sql`CREATE INDEX IF NOT EXISTS idx_markets_state ON markets(state);`;
   await sql`CREATE INDEX IF NOT EXISTS idx_markets_tags ON markets USING gin (tags);`;
   await sql`CREATE INDEX IF NOT EXISTS idx_precedents_tags ON precedents USING gin (tags);`;
   await sql`CREATE INDEX IF NOT EXISTS idx_trades_market ON trades(market_id);`;
   await sql`CREATE INDEX IF NOT EXISTS idx_trades_trader ON trades(trader);`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_positions_holder ON positions(holder);`;
 
   console.log('✓ Database schema verified and indexed.');
 }

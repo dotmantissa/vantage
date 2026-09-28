@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { chains, createClient } from 'genlayer-js';
 import {
   ArrowLeft,
   Lock,
@@ -21,6 +22,7 @@ import { CONTRACTS, formatGen, parseGenToWei, formatDateTime, bpsToPercent } fro
 
 export default function MarketDetailPage({ marketId, onBack }) {
   const { user, authenticated } = usePrivy();
+  const { wallets } = useWallets();
   const userAddress = user?.wallet?.address;
 
   const [market, setMarket] = useState(null);
@@ -66,17 +68,16 @@ export default function MarketDetailPage({ marketId, onBack }) {
         console.warn('Could not load trades:', e);
       }
 
-      // Fetch user position if connected
-      if (userAddress) {
-        try {
-          const posRes = await fetch(`/api/markets/${marketId}/position/${userAddress}`);
-          if (posRes.ok) {
-            const posData = await posRes.json();
-            setPosition(posData);
-          }
-        } catch (e) {
-          console.warn('Could not load position:', e);
+      // Fetch position for connected wallet or demo address
+      const targetAddress = userAddress || '0xBC1399c55538eC034d4Da550C03c34Ae0C357f53';
+      try {
+        const posRes = await fetch(`/api/markets/${marketId}/position/${targetAddress}`);
+        if (posRes.ok) {
+          const posData = await posRes.json();
+          setPosition(posData);
         }
+      } catch (e) {
+        console.warn('Could not load position:', e);
       }
     } catch (err) {
       console.error('Failed to load market:', err);
@@ -121,31 +122,81 @@ export default function MarketDetailPage({ marketId, onBack }) {
   // Action dispatcher
   const executeContractCall = async (method, args = [], valueWei = '0') => {
     setActionLoading(true);
-    setActionMessage(null);
+    setActionMessage({ type: 'info', text: `Broadcasting ${method} to GenLayer StudioNet...` });
     try {
-      // In production/StudioNet, calls go through genlayer-js or backend simulation
-      const payload = {
-        market_id: marketId,
-        method,
-        args,
-        value_wei: valueWei,
-        caller: userAddress || '0xBC1399c55538eC034d4Da550C03c34Ae0C357f53',
-      };
+      let executedOnChain = false;
+      let txHash = null;
 
-      // Call backend sync or transaction relay
-      const res = await fetch('/api/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      // 1. Direct wallet execution if connected with Privy wallet provider
+      const primaryWallet = wallets?.[0];
+      if (primaryWallet && userAddress && primaryWallet.address?.toLowerCase() === userAddress.toLowerCase()) {
+        try {
+          const provider = await primaryWallet.getEthereumProvider();
+          if (provider) {
+            setActionMessage({ type: 'info', text: `Signing ${method} with wallet on GenLayer StudioNet...` });
+            const userClient = createClient({
+              chain: chains.studionet,
+              endpoint: 'https://studio.genlayer.com/api',
+              provider,
+              account: primaryWallet.address,
+            });
 
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.error || `Transaction failed with status ${res.status}`);
+            const resolvedArgs = (args || []).map((arg, idx) => {
+              if (['buy', 'sell'].includes(method) && idx === 1) return Number(arg);
+              return String(arg);
+            });
+
+            txHash = await userClient.writeContract({
+              address: CONTRACTS.market,
+              functionName: method,
+              args: resolvedArgs,
+              value: BigInt(valueWei || '0'),
+            });
+
+            setActionMessage({ type: 'info', text: `Tx ${txHash.slice(0, 10)}... broadcast. Awaiting validator consensus...` });
+            await userClient.waitForTransactionReceipt({
+              hash: txHash,
+              status: 'ACCEPTED',
+              interval: 2000,
+              retries: 45,
+            });
+            executedOnChain = true;
+          }
+        } catch (directErr) {
+          console.warn('[Direct Wallet] Direct wallet execution fallback to gasless relayer:', directErr.message);
+        }
       }
 
-      setActionMessage({ type: 'success', text: `Action "${method}" processed successfully.` });
-      // Refresh market state
+      // 2. Gasless transaction relayer execution
+      if (!executedOnChain) {
+        setActionMessage({ type: 'info', text: `Broadcasting gasless ${method} via Vantage Relayer to StudioNet...` });
+        const payload = {
+          market_id: marketId,
+          method,
+          args,
+          value_wei: valueWei,
+          caller: userAddress || '0xBC1399c55538eC034d4Da550C03c34Ae0C357f53',
+        };
+
+        const res = await fetch('/api/relay', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || `Transaction failed with status ${res.status}`);
+        }
+        txHash = data.tx_hash;
+      }
+
+      setActionMessage({
+        type: 'success',
+        text: `Action "${method}" confirmed on GenLayer StudioNet! ${txHash ? `Tx: ${txHash.slice(0, 10)}...` : 'Consensus: ACCEPTED'}`
+      });
+
+      // Refresh market state and user position
       await fetchMarketData();
     } catch (err) {
       console.error(`Call ${method} failed:`, err);
@@ -530,16 +581,29 @@ export default function MarketDetailPage({ marketId, onBack }) {
           </div>
 
           {/* User Position Card */}
-          {authenticated && (
+          {(authenticated || position) && (
             <div className="legal-panel">
-              <h3 style={{
-                fontFamily: 'var(--font-slab)',
-                fontSize: 'var(--t-section)',
-                fontWeight: 600,
-                marginBottom: 12,
-              }}>
-                Your Position in this Market
-              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                <h3 style={{
+                  fontFamily: 'var(--font-slab)',
+                  fontSize: 'var(--t-section)',
+                  fontWeight: 600,
+                  margin: 0,
+                }}>
+                  Your Position in this Market
+                </h3>
+                <span style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.72rem',
+                  color: 'var(--ink-muted)',
+                  background: 'var(--paper-sunk)',
+                  padding: '4px 8px',
+                  borderRadius: 'var(--radius-control)',
+                  border: 'var(--border-rule)',
+                }}>
+                  {authenticated ? `ACCOUNT: ${userAddress?.slice(0, 6)}...${userAddress?.slice(-4)}` : `GASLESS / DEMO: 0xBC13...7f53`}
+                </span>
+              </div>
 
               <div style={{
                 display: 'grid',

@@ -2,16 +2,20 @@ import express from 'express';
 import { sql } from '../db.js';
 import { syncNow, getContractAddresses } from '../indexer.js';
 import { requireAuth, optionalAuth } from '../auth.js';
-import { chains, createClient } from 'genlayer-js';
+import { chains, createClient, createAccount } from 'genlayer-js';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 const router = express.Router();
 const RPC_URL = process.env.GENLAYER_RPC_URL || 'https://studio.genlayer.com/api';
+const DEPLOYER_KEY = process.env.DEPLOYER_KEY;
+
+const relayerAccount = DEPLOYER_KEY ? createAccount(DEPLOYER_KEY) : null;
 const client = createClient({
   chain: chains.studionet,
   endpoint: RPC_URL,
+  ...(relayerAccount ? { account: relayerAccount } : {}),
 });
 
 /**
@@ -137,27 +141,100 @@ router.get('/markets/:id/position/:address', async (req, res) => {
   try {
     const { id, address } = req.params;
     const { market: marketContractAddress } = getContractAddresses();
+    const normAddr = address.toLowerCase();
 
-    const rawPos = await client.readContract({
-      address: marketContractAddress,
-      functionName: 'get_position',
-      args: [id, address],
-    });
-    const pos = typeof rawPos === 'string' ? JSON.parse(rawPos || '{}') : (rawPos || {});
+    // 1. Read on-chain position
+    let onChainShares = {};
+    let onChainLp = '0';
+    let claimableBal = '0';
 
-    const rawBal = await client.readContract({
-      address: marketContractAddress,
-      functionName: 'get_balance',
-      args: [address],
-    });
-    const bal = typeof rawBal === 'string' ? JSON.parse(rawBal || '{}') : (rawBal || {});
+    try {
+      const rawPos = await client.readContract({
+        address: marketContractAddress,
+        functionName: 'get_position',
+        args: [id, address],
+      });
+      const pos = typeof rawPos === 'string' ? JSON.parse(rawPos || '{}') : (rawPos || {});
+      onChainShares = pos.shares || {};
+      onChainLp = pos.lp_shares || '0';
+    } catch (e) {
+      console.warn(`[Position] on-chain get_position failed for ${address}:`, e.message);
+    }
+
+    try {
+      const rawBal = await client.readContract({
+        address: marketContractAddress,
+        functionName: 'get_balance',
+        args: [address],
+      });
+      const bal = typeof rawBal === 'string' ? JSON.parse(rawBal || '{}') : (rawBal || {});
+      claimableBal = bal.balance_wei || '0';
+    } catch {}
+
+    // 2. Read DB positions table
+    let dbShares = {};
+    let dbLp = '0';
+    try {
+      const dbPos = await sql`
+        SELECT * FROM positions
+        WHERE market_id = ${id} AND LOWER(holder) = ${normAddr}
+        LIMIT 1
+      `;
+      if (dbPos.length > 0) {
+        dbShares = typeof dbPos[0].shares === 'string' ? JSON.parse(dbPos[0].shares) : (dbPos[0].shares || {});
+        dbLp = dbPos[0].lp_shares || '0';
+      }
+    } catch {}
+
+    // Merge positions
+    const mergedShares = {};
+    const allKeys = new Set([...Object.keys(onChainShares), ...Object.keys(dbShares)]);
+    const isRelayer = relayerAccount && normAddr === relayerAccount.address.toLowerCase();
+
+    for (const k of allKeys) {
+      const onChainVal = BigInt(onChainShares[k] || '0');
+      const dbVal = BigInt(dbShares[k] || '0');
+      if (isRelayer) {
+        mergedShares[k] = (onChainVal > 0n ? onChainVal : dbVal).toString();
+      } else {
+        mergedShares[k] = (onChainVal + dbVal).toString();
+      }
+    }
+
+    const mergedLp = isRelayer
+      ? (BigInt(onChainLp || '0') > 0n ? onChainLp : dbLp)
+      : (BigInt(onChainLp || '0') + BigInt(dbLp || '0')).toString();
+
+    // 3. Fallback: if both are 0, check trades table for this trader
+    const hasAnyShares = Object.values(mergedShares).some(v => BigInt(v || '0') > 0n) || BigInt(mergedLp || '0') > 0n;
+    if (!hasAnyShares) {
+      try {
+        const tradeRows = await sql`
+          SELECT * FROM trades
+          WHERE market_id = ${id} AND LOWER(trader) = ${normAddr}
+          ORDER BY created_at ASC
+        `;
+        if (tradeRows.length > 0) {
+          for (const t of tradeRows) {
+            const idx = String(t.outcome_index);
+            const sh = BigInt(t.shares || '0');
+            const cur = BigInt(mergedShares[idx] || '0');
+            if (t.action === 'BUY') {
+              mergedShares[idx] = (cur + sh).toString();
+            } else if (t.action === 'SELL') {
+              mergedShares[idx] = (cur > sh ? cur - sh : 0n).toString();
+            }
+          }
+        }
+      } catch {}
+    }
 
     res.json({
       market_id: id,
       holder: address,
-      shares: pos.shares || {},
-      lp_shares: pos.lp_shares || '0',
-      claimable_balance_wei: bal.balance_wei || '0',
+      shares: mergedShares,
+      lp_shares: mergedLp,
+      claimable_balance_wei: claimableBal,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -337,9 +414,242 @@ router.get('/stats', async (req, res) => {
 });
 
 /**
- * Trigger fast indexer sync
+ * Helper to extract contract return payload from transaction consensus data
+ */
+function extractContractResult(fullTx) {
+  try {
+    const validators = fullTx?.consensus_data?.validators || [];
+    for (const v of validators) {
+      if (v?.result) {
+        const decoded = Buffer.from(v.result, 'base64').toString('utf8');
+        const jsonMatch = decoded.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          return JSON.parse(jsonMatch[0]);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[Relay] Failed to extract contract result from consensus data:', e.message);
+  }
+  return null;
+}
+
+/**
+ * Relayer execution engine: executes on-chain intelligent contract calls via deployer key
+ */
+async function handleRelayRequest(req, res) {
+  try {
+    const { action, method, market_id, args = [], value_wei = '0', caller } = req.body;
+    const { market: marketContractAddress } = getContractAddresses();
+
+    if (!relayerAccount) {
+      return res.status(500).json({ error: 'Relayer private key (DEPLOYER_KEY) is not configured in backend environment' });
+    }
+
+    if (action === 'compile_market') {
+      const { question, close_time, seed_liquidity_wei, extra_sources_csv, value_wei: createValueWei, author } = req.body;
+      if (!question || !close_time) {
+        return res.status(400).json({ error: 'Missing required market creation parameters' });
+      }
+
+      console.log(`[Relay] Broadcasting compile_market for "${question}"...`);
+      const txHash = await client.writeContract({
+        address: marketContractAddress,
+        functionName: 'compile_market',
+        args: [
+          String(question).trim(),
+          Number(close_time),
+          String(seed_liquidity_wei || '5000000000000000000'),
+          String(extra_sources_csv || ''),
+        ],
+        value: BigInt(createValueWei || '10000000000000000000'),
+      });
+
+      console.log(`[Relay] compile_market tx sent: ${txHash}. Waiting for consensus...`);
+      const receipt = await client.waitForTransactionReceipt({
+        hash: txHash,
+        status: 'ACCEPTED',
+        interval: 2000,
+        retries: 60,
+      });
+
+      console.log(`[Relay] compile_market accepted! Status: ${receipt?.status}`);
+      await syncNow();
+
+      const latestMarkets = await sql`SELECT * FROM markets ORDER BY created_at_chain DESC LIMIT 1`;
+      return res.json({
+        success: true,
+        tx_hash: txHash,
+        status: receipt?.status || 'ACCEPTED',
+        market_id: latestMarkets[0]?.market_id || '1',
+        market: latestMarkets[0] || null,
+      });
+    }
+
+    if (!method) {
+      await syncNow();
+      return res.json({ message: 'Sync complete' });
+    }
+
+    // Prepare arguments with appropriate type conversions
+    const resolvedArgs = (args || []).map((arg, idx) => {
+      if (['buy', 'sell'].includes(method) && idx === 1) {
+        return Number(arg);
+      }
+      return String(arg);
+    });
+
+    console.log(`[Relay] Executing ${method} on market ${market_id} with value ${value_wei} wei...`);
+
+    const txHash = await client.writeContract({
+      address: marketContractAddress,
+      functionName: method,
+      args: resolvedArgs,
+      value: BigInt(value_wei || '0'),
+    });
+
+    console.log(`[Relay] Tx broadcast: ${txHash}. Awaiting validator consensus...`);
+
+    const receipt = await client.waitForTransactionReceipt({
+      hash: txHash,
+      status: 'ACCEPTED',
+      interval: 2000,
+      retries: 45,
+    });
+
+    console.log(`[Relay] Tx confirmed on StudioNet: ${txHash}`);
+
+    let fullTx = null;
+    let contractResult = null;
+    try {
+      fullTx = await client.getTransaction({ hash: txHash });
+      contractResult = extractContractResult(fullTx);
+      if (contractResult) {
+        console.log(`[Relay] Decoded contract result:`, contractResult);
+      }
+    } catch (e) {
+      console.warn('[Relay] Failed to query full tx consensus data:', e.message);
+    }
+
+    const effectiveCaller = String(caller || relayerAccount.address).toLowerCase();
+
+    // If trade action, record in positions and trades tables
+    if (method === 'buy' || method === 'sell') {
+      const outcomeIdx = Number(args[1] || 0);
+      const isBuy = method === 'buy';
+
+      let tradeShares = 0n;
+      if (isBuy && contractResult?.shares_out) {
+        tradeShares = BigInt(contractResult.shares_out);
+      } else if (!isBuy && contractResult?.shares_burned) {
+        tradeShares = BigInt(contractResult.shares_burned);
+      } else if (!isBuy && args[2]) {
+        tradeShares = BigInt(args[2]);
+      } else if (isBuy && value_wei) {
+        tradeShares = BigInt(value_wei);
+      }
+
+      // Update DB position for effectiveCaller
+      try {
+        const existing = await sql`
+          SELECT * FROM positions WHERE market_id = ${market_id} AND LOWER(holder) = ${effectiveCaller} LIMIT 1
+        `;
+        let userShares = existing[0]?.shares || {};
+        if (typeof userShares === 'string') userShares = JSON.parse(userShares);
+        const prevLp = existing[0]?.lp_shares || '0';
+
+        const prevShares = BigInt(userShares[String(outcomeIdx)] || '0');
+        if (isBuy) {
+          userShares[String(outcomeIdx)] = (prevShares + tradeShares).toString();
+        } else {
+          userShares[String(outcomeIdx)] = (prevShares > tradeShares ? prevShares - tradeShares : 0n).toString();
+        }
+
+        await sql`
+          INSERT INTO positions (market_id, holder, shares, lp_shares, updated_at)
+          VALUES (${market_id}, ${effectiveCaller}, ${JSON.stringify(userShares)}::jsonb, ${prevLp}, CURRENT_TIMESTAMP)
+          ON CONFLICT (market_id, holder) DO UPDATE SET
+            shares = EXCLUDED.shares,
+            updated_at = CURRENT_TIMESTAMP;
+        `;
+      } catch (posErr) {
+        console.warn('[Relay] Failed to update positions cache:', posErr.message);
+      }
+
+      // Record trade history
+      try {
+        const tradeCollateral = contractResult?.collateral_in || contractResult?.collateral_out || value_wei || '0';
+        const tradeFee = contractResult?.fee_wei || '0';
+        await sql`
+          INSERT INTO trades (
+            market_id, trader, action, outcome_index, shares, collateral_wei, fee_wei, tx_hash, created_at
+          ) VALUES (
+            ${market_id}, ${effectiveCaller}, ${method.toUpperCase()}, ${outcomeIdx},
+            ${tradeShares.toString()}, ${tradeCollateral}, ${tradeFee}, ${txHash}, CURRENT_TIMESTAMP
+          );
+        `;
+      } catch (tradeErr) {
+        console.warn('[Relay] Failed to record trade:', tradeErr.message);
+      }
+    } else if (method === 'add_liquidity' || method === 'remove_liquidity') {
+      const isAdd = method === 'add_liquidity';
+      try {
+        const existing = await sql`
+          SELECT * FROM positions WHERE market_id = ${market_id} AND LOWER(holder) = ${effectiveCaller} LIMIT 1
+        `;
+        let prevShares = existing[0]?.shares || {};
+        if (typeof prevShares === 'string') prevShares = JSON.parse(prevShares);
+        let curLp = BigInt(existing[0]?.lp_shares || '0');
+        let diff = 0n;
+        if (isAdd && contractResult?.added_wei) {
+          diff = BigInt(contractResult.added_wei);
+        } else if (!isAdd && contractResult?.lp_shares_burned) {
+          diff = BigInt(contractResult.lp_shares_burned);
+        } else {
+          diff = BigInt(value_wei || args[1] || '0');
+        }
+        let nextLp = isAdd ? curLp + diff : (curLp > diff ? curLp - diff : 0n);
+
+        await sql`
+          INSERT INTO positions (market_id, holder, shares, lp_shares, updated_at)
+          VALUES (${market_id}, ${effectiveCaller}, ${JSON.stringify(prevShares)}::jsonb, ${nextLp.toString()}, CURRENT_TIMESTAMP)
+          ON CONFLICT (market_id, holder) DO UPDATE SET
+            lp_shares = EXCLUDED.lp_shares,
+            updated_at = CURRENT_TIMESTAMP;
+        `;
+      } catch (lpErr) {
+        console.warn('[Relay] Failed to update LP position:', lpErr.message);
+      }
+    }
+
+    // Refresh database indexing
+    await syncNow();
+
+    res.json({
+      success: true,
+      tx_hash: txHash,
+      status: receipt?.status || 'ACCEPTED',
+      method,
+      contract_result: contractResult,
+    });
+  } catch (err) {
+    console.error('[Relay] Error executing transaction:', err);
+    res.status(500).json({ error: err.message || 'Failed to execute transaction on GenLayer' });
+  }
+}
+
+/**
+ * Transaction Relay: executes on-chain writeContract calls
+ */
+router.post('/relay', handleRelayRequest);
+
+/**
+ * Trigger fast indexer sync (also handles forwarded action/method requests)
  */
 router.post('/sync', async (req, res) => {
+  if (req.body && (req.body.method || req.body.action)) {
+    return handleRelayRequest(req, res);
+  }
   try {
     await syncNow();
     res.json({ message: 'Sync complete' });

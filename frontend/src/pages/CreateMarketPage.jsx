@@ -105,7 +105,7 @@ export default function CreateMarketPage({ onMarketCreated }) {
       const totalValueWei = (BigInt(authorBond) + BigInt(depositLiquidity)).toString();
 
       // Trigger compile_market on StudioNet
-      const res = await fetch('/api/sync', {
+      const res = await fetch('/api/relay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
