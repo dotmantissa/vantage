@@ -664,33 +664,62 @@ export default function MarketDetailPage({ marketId, onBack }) {
               </p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>
-                {trades.map((t, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '8px 12px',
-                      background: 'var(--paper-sunk)',
-                      borderRadius: 'var(--radius-control)',
-                      border: 'var(--border-rule)',
-                    }}
-                  >
-                    <div>
-                      <span style={{ fontWeight: 600, textTransform: 'uppercase', color: t.kind === 'BUY' ? 'var(--forest)' : 'var(--ink)' }}>
-                        {t.kind}
-                      </span>
-                      <span style={{ marginLeft: 8, color: 'var(--ink-muted)' }}>
-                        {outcomes[t.outcome_index] || `Outcome ${t.outcome_index}`}
-                      </span>
+                {trades.map((t, idx) => {
+                  const action = (t.action || t.kind || 'BUY').toUpperCase();
+                  const collateralWei = t.collateral_wei || t.collateral_amount_wei || '0';
+                  const formattedGenAmt = formatGen(collateralWei);
+                  const sharesAmt = t.shares ? formatGen(t.shares) : null;
+                  const isBuy = action === 'BUY';
+                  const outcomeLabel = outcomes[t.outcome_index] !== undefined
+                    ? outcomes[t.outcome_index]
+                    : `Outcome ${t.outcome_index}`;
+
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px 12px',
+                        background: 'var(--paper-sunk)',
+                        borderRadius: 'var(--radius-control)',
+                        border: 'var(--border-rule)',
+                        color: 'var(--ink)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{
+                          fontWeight: 700,
+                          fontSize: '0.74rem',
+                          padding: '2px 6px',
+                          borderRadius: 'var(--radius-control)',
+                          background: isBuy ? 'rgba(114, 152, 119, 0.15)' : 'rgba(35, 31, 32, 0.1)',
+                          color: isBuy ? 'var(--forest)' : 'var(--ink)',
+                          border: `1px solid ${isBuy ? 'var(--forest)' : 'var(--hairline)'}`,
+                        }}>
+                          {action}
+                        </span>
+                        <span style={{ fontWeight: 600, color: 'var(--ink)' }}>
+                          {outcomeLabel}
+                        </span>
+                        {sharesAmt && (
+                          <span style={{ color: 'var(--ink-muted)', fontSize: '0.72rem' }}>
+                            ({sharesAmt} sh)
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontWeight: 600, color: 'var(--ink)' }}>
+                          {formattedGenAmt} GEN
+                        </span>
+                        <span style={{ color: 'var(--ink-muted)', fontSize: '0.72rem' }}>
+                          {t.trader ? `${t.trader.slice(0, 6)}...${t.trader.slice(-4)}` : ''}
+                        </span>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', gap: 12 }}>
-                      <span>{formatGen(t.collateral_amount_wei)} GEN</span>
-                      <span style={{ color: 'var(--ink-muted)' }}>{t.trader ? `${t.trader.slice(0, 6)}...` : ''}</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -792,31 +821,49 @@ export default function MarketDetailPage({ marketId, onBack }) {
 
                 {/* Outcome Selector */}
                 <div style={{ marginBottom: 14 }}>
-                  <label style={{ fontSize: '0.74rem', color: 'var(--ink-muted)', textTransform: 'uppercase' }}>
+                  <label style={{ fontSize: '0.74rem', color: 'var(--ink-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
                     Select Outcome:
                   </label>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
-                    {outcomes.map((label, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setSelectedOutcome(idx)}
-                        style={{
-                          padding: '10px 14px',
-                          borderRadius: 'var(--radius-control)',
-                          background: selectedOutcome === idx ? 'var(--paper-sunk)' : 'transparent',
-                          border: selectedOutcome === idx ? '1px solid var(--ink)' : '1px solid var(--hairline)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          textAlign: 'left',
-                        }}
-                      >
-                        <span style={{ fontWeight: 600, fontSize: '0.86rem' }}>{label}</span>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.84rem' }}>
-                          {bpsToPercent(prices[idx])}
-                        </span>
-                      </button>
-                    ))}
+                    {outcomes.map((label, idx) => {
+                      const isSelected = selectedOutcome === idx;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setSelectedOutcome(idx)}
+                          style={{
+                            padding: '12px 14px',
+                            borderRadius: 'var(--radius-control)',
+                            background: isSelected ? 'var(--paper-sunk)' : 'var(--paper-raised)',
+                            border: isSelected ? '1.5px solid var(--forest)' : '1px solid var(--hairline)',
+                            color: 'var(--ink)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <span style={{
+                            fontWeight: isSelected ? 700 : 500,
+                            fontSize: '0.90rem',
+                            color: 'var(--ink)',
+                          }}>
+                            {label}
+                          </span>
+                          <span style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '0.86rem',
+                            color: isSelected ? 'var(--forest)' : 'var(--ink)',
+                            fontWeight: 600,
+                          }}>
+                            {bpsToPercent(prices[idx])}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 

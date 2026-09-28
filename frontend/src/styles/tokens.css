@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Vantage Design Tokens (Design Seed: 1790593893576409612)
+   Vantage Design Tokens
    ========================================================================== */
 
 :root {
@@ -86,6 +86,7 @@ a {
 
 button {
   font-family: inherit;
+  color: inherit;
   cursor: pointer;
   border: none;
   background: none;
@@ -93,6 +94,7 @@ button {
 
 input, textarea, select {
   font-family: inherit;
+  color: inherit;
 }
 
 :focus-visible {
