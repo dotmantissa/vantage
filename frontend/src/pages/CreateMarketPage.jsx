@@ -23,9 +23,9 @@ import { parseGenToWei, formatGen } from '../lib/contracts';
 
 const EXAMPLE_QUESTIONS = [
   'Will Bitcoin exceed $120,000 before December 31, 2026?',
-  'Will the Federal Reserve lower interest rates in 2026?',
+  'Will the Federal Reserve lower interest rates before December 31, 2026?',
   'Will Apple market cap surpass $4 Trillion USD by end of Q4 2026?',
-  'Will GenLayer StudioNet reach 1,000 active smart contracts by December 2026?'
+  'Will GenLayer StudioNet reach 1,000 active smart contracts by December 31, 2026?'
 ];
 
 export default function CreateMarketPage({ onMarketCreated }) {
@@ -52,6 +52,7 @@ export default function CreateMarketPage({ onMarketCreated }) {
   const [submitStep, setSubmitStep] = useState('');
   const [submitError, setSubmitError] = useState(null);
   const [submitSuccess, setSubmitSuccess] = useState(null);
+  const [rejectionDetails, setRejectionDetails] = useState(null);
 
   // Stage 1: Consult validators on the question
   const handleConsultValidators = async (e) => {
@@ -61,7 +62,7 @@ export default function CreateMarketPage({ onMarketCreated }) {
       setValidationError('Please enter a prediction market question in plain English.');
       return;
     }
-    if (cleanQ.length < 10) {
+    if (cleanQ.length < 12) {
       setValidationError('The question is too brief. Please provide a clear, specific market proposition.');
       return;
     }
@@ -69,6 +70,7 @@ export default function CreateMarketPage({ onMarketCreated }) {
     setValidating(true);
     setValidationError(null);
     setValidationResult(null);
+    setRejectionDetails(null);
 
     try {
       const res = await fetch('/api/validate-market', {
@@ -89,7 +91,7 @@ export default function CreateMarketPage({ onMarketCreated }) {
         if (data.timeline_detected && data.detected_close_iso) {
           setCloseDate(data.detected_close_iso);
         } else {
-          // If no timeline detected, default to 14 days ahead so the user can review or change
+          // If no timeline detected, default to 14 days ahead so user can review or change
           const d = new Date();
           d.setDate(d.getDate() + 14);
           setCloseDate(d.toISOString().slice(0, 16));
@@ -133,6 +135,7 @@ export default function CreateMarketPage({ onMarketCreated }) {
     setSubmitStep('Broadcasting compile_market to GenLayer StudioNet...');
     setSubmitError(null);
     setSubmitSuccess(null);
+    setRejectionDetails(null);
 
     try {
       const closeTimestamp = Math.floor(new Date(closeDate).getTime() / 1000);
@@ -173,15 +176,28 @@ export default function CreateMarketPage({ onMarketCreated }) {
       });
 
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to compile market on GenLayer StudioNet.');
+
+      // Check if on-chain validators rejected the market proposition
+      if (!res.ok || data.created === false || !data.success) {
+        setSubmitStep('');
+        setSubmitting(false);
+        setRejectionDetails({
+          problems: data.problems && data.problems.length > 0 ? data.problems : [data.error || 'Resolvability criteria not satisfied.'],
+          suggested_rewrites: data.suggested_rewrites || [],
+          refunded_wei: data.refunded_wei || '0',
+          reason: data.reason || 'NOT_RESOLVABLE',
+        });
+        setSubmitError(data.error || 'On-chain GenLayer validators rejected this proposition.');
+        return;
       }
 
+      setRejectionDetails(null);
       setSubmitStep('Validator consensus reached: ACCEPTED');
       setSubmitSuccess(data);
 
-      if (onMarketCreated) {
-        setTimeout(() => onMarketCreated(data.market_id || '1'), 1800);
+      // Only navigate to the market if a genuine new market was created
+      if (onMarketCreated && data.market_id) {
+        setTimeout(() => onMarketCreated(data.market_id), 2200);
       }
     } catch (err) {
       console.error('Market compilation error:', err);
@@ -294,7 +310,7 @@ export default function CreateMarketPage({ onMarketCreated }) {
                     setQuestion(e.target.value);
                     if (validationError) setValidationError(null);
                   }}
-                  placeholder="e.g. Will Bitcoin exceed $120,000 before December 31, 2026? or Will the Federal Reserve lower interest rates in 2026?"
+                  placeholder="e.g. Will Bitcoin exceed $120,000 before December 31, 2026? or Will the Federal Reserve lower interest rates before December 31, 2026?"
                   style={{
                     width: '100%',
                     padding: '14px 16px',
@@ -372,8 +388,38 @@ export default function CreateMarketPage({ onMarketCreated }) {
                     <p style={{ fontSize: '0.84rem', color: 'var(--ink-muted)', lineHeight: 1.45 }}>
                       {validationResult.reason || 'The question is too subjective or lacks an empirical data oracle.'}
                     </p>
+                    
+                    {validationResult.suggested_rewrite && (
+                      <div style={{ marginTop: 10 }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuestion(validationResult.suggested_rewrite);
+                            setValidationResult(null);
+                            setValidationError(null);
+                          }}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '6px 10px',
+                            borderRadius: 'var(--radius-control)',
+                            background: 'var(--paper)',
+                            border: '1px solid var(--forest)',
+                            fontSize: '0.80rem',
+                            color: 'var(--ink)',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <span>Adopt suggested wording: "{validationResult.suggested_rewrite}"</span>
+                          <ArrowRight size={14} color="var(--forest)" />
+                        </button>
+                      </div>
+                    )}
+
                     <p style={{ fontSize: '0.78rem', color: 'var(--ink-muted)', marginTop: 8 }}>
-                      <strong>Tip:</strong> Re-phrase your question around verifiable market numbers, official announcements, or empirical event records.
+                      <strong>Tip:</strong> Re-phrase your question around verifiable market numbers, official announcements, or empirical event records with a specific calendar date.
                     </p>
                   </div>
                 </div>
@@ -440,7 +486,11 @@ export default function CreateMarketPage({ onMarketCreated }) {
                 </span>
                 <button
                   type="button"
-                  onClick={() => setStage(1)}
+                  onClick={() => {
+                    setStage(1);
+                    setRejectionDetails(null);
+                    setSubmitError(null);
+                  }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -886,12 +936,121 @@ export default function CreateMarketPage({ onMarketCreated }) {
                     border: '1px solid var(--forest)',
                     fontFamily: 'var(--font-mono)',
                   }}>
-                    Market #{submitSuccess.market_id || '1'} compiled and deployed successfully!
+                    Market #{submitSuccess.market_id} compiled and deployed successfully! Redirecting...
                   </div>
                 )}
 
-                {/* Error Banner */}
-                {submitError && (
+                {/* On-Chain Rejection Details Card */}
+                {rejectionDetails && (
+                  <div style={{
+                    padding: 16,
+                    borderRadius: 'var(--radius-control)',
+                    background: 'rgba(215, 60, 60, 0.08)',
+                    border: '1px solid rgba(215, 60, 60, 0.4)',
+                    marginTop: 10,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <ShieldAlert size={18} color="#c53030" style={{ flexShrink: 0 }} />
+                      <h4 style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--ink)' }}>
+                        On-Chain Resolvability Gate Rejected
+                      </h4>
+                    </div>
+                    <p style={{ fontSize: '0.80rem', color: 'var(--ink-muted)', marginBottom: 10, lineHeight: 1.45 }}>
+                      GenLayer AI validator consensus executed your proposition and determined it cannot be settled deterministically from empirical evidence.
+                    </p>
+
+                    {rejectionDetails.problems?.length > 0 && (
+                      <div style={{ marginBottom: 12 }}>
+                        <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                          Validator Gate Failures:
+                        </span>
+                        <ul style={{ paddingLeft: 18, marginTop: 4, fontSize: '0.80rem', color: 'var(--ink)', lineHeight: 1.45 }}>
+                          {rejectionDetails.problems.map((prob, idx) => (
+                            <li key={idx} style={{ marginBottom: 4 }}>{prob}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {rejectionDetails.refunded_wei && rejectionDetails.refunded_wei !== '0' && (
+                      <div style={{
+                        fontSize: '0.74rem',
+                        fontFamily: 'var(--font-mono)',
+                        color: 'var(--forest)',
+                        marginBottom: 12,
+                        padding: '6px 10px',
+                        background: 'var(--paper-sunk)',
+                        borderRadius: 'var(--radius-control)',
+                        border: 'var(--border-rule)',
+                      }}>
+                        ✓ Refunded {formatGen(rejectionDetails.refunded_wei)} GEN to author address.
+                      </div>
+                    )}
+
+                    {rejectionDetails.suggested_rewrites?.length > 0 && (
+                      <div style={{ marginTop: 8 }}>
+                        <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--ink-muted)', fontWeight: 600 }}>
+                          Validator Suggested Rewrites (Click to adopt):
+                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
+                          {rejectionDetails.suggested_rewrites.map((rw, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                setQuestion(rw);
+                                setStage(1);
+                                setRejectionDetails(null);
+                                setSubmitError(null);
+                              }}
+                              style={{
+                                textAlign: 'left',
+                                padding: '8px 10px',
+                                background: 'var(--paper)',
+                                border: '1px solid var(--sage)',
+                                borderRadius: 'var(--radius-control)',
+                                fontSize: '0.78rem',
+                                color: 'var(--ink)',
+                                cursor: 'pointer',
+                                lineHeight: 1.35,
+                              }}
+                            >
+                              <div>{rw}</div>
+                              <span style={{ fontSize: '0.70rem', color: 'var(--sage)', fontWeight: 600, display: 'inline-block', marginTop: 2 }}>
+                                Use this rewrite & re-consult validators →
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStage(1);
+                        setRejectionDetails(null);
+                        setSubmitError(null);
+                      }}
+                      style={{
+                        marginTop: 12,
+                        padding: '6px 12px',
+                        fontSize: '0.78rem',
+                        background: 'var(--ink)',
+                        color: 'var(--paper)',
+                        borderRadius: 'var(--radius-control)',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        border: 'none',
+                      }}
+                    >
+                      ← Edit Question in Step 1
+                    </button>
+                  </div>
+                )}
+
+                {/* Generic Error Banner */}
+                {submitError && !rejectionDetails && (
                   <div style={{
                     padding: 12,
                     borderRadius: 'var(--radius-control)',

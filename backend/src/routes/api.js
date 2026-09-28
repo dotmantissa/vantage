@@ -438,6 +438,9 @@ function recommendSources(q) {
   } else if (/fed|federal reserve|interest rate|inflation|cpi|unemployment|gdp|treasury|recession/i.test(text)) {
     sources.push('www.federalreserve.gov', 'bls.gov', 'bea.gov');
     rationale = 'Official US Government economic statistical releases and Federal Reserve FOMC announcements.';
+  } else if (/nasa|space|spacex|moon|mars|astronomy|planet|orbit|launch|satellite/i.test(text)) {
+    sources.push('nasa.gov', 'apnews.com', 'reuters.com');
+    rationale = 'Official NASA mission bulletins, space agency records, and verified wire reports (Reuters, AP News).';
   } else if (/github|stars|repository|repo|release|commit|open source|npm|crates\.io/i.test(text)) {
     sources.push('api.github.com', 'github.com');
     rationale = 'GitHub REST API for programmatic verification of repository stargazers, releases, and metrics.';
@@ -460,17 +463,45 @@ function recommendSources(q) {
  */
 function assessResolvability(q) {
   const text = q.trim();
-  if (text.length < 10) {
+  if (text.length < 12) {
     return {
       resolvable: false,
       reason: 'Question is too short to construct a verifiable prediction predicate.'
     };
   }
 
+  // Purely subjective opinion queries
   if (/^(is|are)\s+.*\s+(better|good|bad|ugly|tasty|pretty|cool)\??$/i.test(text)) {
     return {
       resolvable: false,
       reason: 'Question appears purely subjective without objective criteria or an empirical data oracle.'
+    };
+  }
+
+  // Inherently subjective claims without verifiable criteria
+  const subjectiveMatch = text.match(/\b(make\s+a\s+(new\s+)?discovery|discover\s+(aliens|life|something|truth)|breakthrough|become\s+(popular|famous|successful|viral)|be\s+(popular|famous|successful|viral))\b/i);
+  if (subjectiveMatch) {
+    return {
+      resolvable: false,
+      reason: `The phrase "${subjectiveMatch[0]}" is inherently subjective and lacks an objective definition of what qualifies as verifiable evidence. Frame your question around specific quantifiable announcements or official releases (e.g. "Will NASA announce the discovery of an exoplanet before December 31, 2026?").`
+    };
+  }
+
+  // Relative timeframe without concrete calendar date
+  const relativeMatch = text.match(/\b(in|within)\s+the\s+next\s+(\d+)\s+(days?|weeks?|months?)\b/i);
+  if (relativeMatch) {
+    const amount = parseInt(relativeMatch[2], 10);
+    const unit = relativeMatch[3].toLowerCase();
+    const d = new Date();
+    if (unit.startsWith('day')) d.setDate(d.getDate() + amount);
+    else if (unit.startsWith('week')) d.setDate(d.getDate() + amount * 7);
+    else if (unit.startsWith('month')) d.setMonth(d.getMonth() + amount);
+    const dateStr = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+    return {
+      resolvable: false,
+      reason: `The phrase "${relativeMatch[0]}" cannot be pinned to an immutable UTC timestamp on-chain from the text alone. Please use a concrete calendar date (e.g. "before ${dateStr}").`,
+      suggested_rewrite: text.replace(relativeMatch[0], `before ${dateStr}`),
     };
   }
 
@@ -646,15 +677,52 @@ async function handleRelayRequest(req, res) {
       });
 
       console.log(`[Relay] compile_market accepted! Status: ${receipt?.status}`);
+
+      // Extract consensus execution result from validators
+      let contractResult = null;
+      try {
+        const fullTx = await client.getTransaction({ hash: txHash });
+        contractResult = extractContractResult(fullTx);
+        console.log(`[Relay] compile_market consensus result:`, contractResult);
+      } catch (err) {
+        console.warn(`[Relay] Failed to fetch or decode tx consensus payload:`, err.message);
+      }
+
+      // Check if on-chain validators rejected the market proposition
+      if (contractResult && contractResult.created === false) {
+        return res.status(422).json({
+          success: false,
+          created: false,
+          tx_hash: txHash,
+          reason: contractResult.reason || 'NOT_RESOLVABLE',
+          problems: contractResult.problems || [],
+          suggested_rewrites: contractResult.suggested_rewrites || [],
+          refunded_wei: contractResult.refunded_wei || '0',
+          restated_question: contractResult.restated_question || '',
+          error: `On-chain validators rejected compilation: ${(contractResult.problems || []).join('; ') || 'Question failed resolvability gate.'}`,
+        });
+      }
+
       await syncNow();
 
-      const latestMarkets = await sql`SELECT * FROM markets ORDER BY created_at_chain DESC LIMIT 1`;
+      const newMarketId = contractResult?.market_id;
+      let matchedMarket = null;
+      if (newMarketId) {
+        const rows = await sql`SELECT * FROM markets WHERE market_id = ${newMarketId}`;
+        matchedMarket = rows[0] || null;
+      }
+      if (!matchedMarket) {
+        const latestMarkets = await sql`SELECT * FROM markets ORDER BY created_at_chain DESC LIMIT 1`;
+        matchedMarket = latestMarkets[0] || null;
+      }
+
       return res.json({
         success: true,
+        created: true,
         tx_hash: txHash,
         status: receipt?.status || 'ACCEPTED',
-        market_id: latestMarkets[0]?.market_id || '1',
-        market: latestMarkets[0] || null,
+        market_id: newMarketId || matchedMarket?.market_id,
+        market: matchedMarket,
       });
     }
 
