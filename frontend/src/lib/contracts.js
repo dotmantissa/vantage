@@ -6,7 +6,7 @@ export const CHAIN_ID = 61999;
 
 export const CONTRACTS = {
   charter: '0xBfB34B0b1dCa954823fBbefBAc815c4136d815e0',
-  market: '0x96767e45874e697e5f2d059729890Ba5478e85b4',
+  market: '0xe143684F1f1fC777d79401C7C26b2123A1c51fe1',
 };
 
 export const DEFAULT_BONDS = {

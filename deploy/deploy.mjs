@@ -144,6 +144,27 @@ async function main() {
     });
     console.log('✓ VantageMarket authorized as precedent registrar on VantageCharter.');
 
+    // 3b. Authorize the backend's broadcasting key as a relayer.
+    //
+    // Users sign in with email, so the backend signs for them. A relayer may name
+    // the authenticated user it is acting for, and VantageMarket then records
+    // authorship, positions, bonds, and credits against that user rather than
+    // against this key. The deployer is a relayer implicitly, but registering it
+    // explicitly means the backend keeps working if ownership ever moves.
+    console.log(`\nAuthorizing relayer ${account.address} on VantageMarket...`);
+    const relayerTxHash = await client.writeContract({
+      address: marketDeploy.address,
+      functionName: 'set_relayer',
+      args: [account.address, true],
+    });
+    await client.waitForTransactionReceipt({
+      hash: relayerTxHash,
+      status: 'ACCEPTED',
+      interval: 3000,
+      retries: 50,
+    });
+    console.log('✓ Relayer authorized on VantageMarket.');
+
     // 4. Save deployed contract addresses
     const deploymentRecord = {
       network: 'studionet',

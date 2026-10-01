@@ -49,7 +49,7 @@ export function getContractAddresses() {
   } catch {}
   return {
     charter: '0xBfB34B0b1dCa954823fBbefBAc815c4136d815e0',
-    market: '0x96767e45874e697e5f2d059729890Ba5478e85b4',
+    market: '0xe143684F1f1fC777d79401C7C26b2123A1c51fe1',
   };
 }
 
@@ -204,13 +204,30 @@ export async function syncNow() {
 
       // Only query precedent tags if precedents actually exist
       if (count > 0) {
-        const sampleTags = ['crypto', 'finance', 'sports', 'weather', 'ethereum'];
-        for (const tag of sampleTags) {
+        // Ask the registry which tags it actually holds rather than guessing at a
+        // sample list, so a settled market's precedent is indexed whatever it was
+        // tagged with.
+        let tags = [];
+        try {
+          const rawTags = await client.readContract({
+            address: charter,
+            functionName: 'list_tags',
+            args: [],
+          });
+          const parsedTags = typeof rawTags === 'string' ? JSON.parse(rawTags || '{}') : (rawTags || {});
+          tags = (parsedTags.tags || []).map(row => row?.tag).filter(Boolean);
+        } catch (e) {
+          console.error('Error listing charter tags:', e.message);
+        }
+
+        for (const tag of tags) {
           try {
+            // lookup_by_tag(tag) takes exactly one argument. Passing a second one
+            // made every call fail, which is why no precedent was ever indexed.
             const rawMatches = await client.readContract({
               address: charter,
               functionName: 'lookup_by_tag',
-              args: [tag, 20],
+              args: [tag],
             });
             const parsed = typeof rawMatches === 'string' ? JSON.parse(rawMatches || '{}') : (rawMatches || {});
             const precedents = parsed.matches || [];
@@ -239,7 +256,9 @@ export async function syncNow() {
                 ON CONFLICT (precedent_id) DO NOTHING;
               `;
             }
-          } catch {}
+          } catch (e) {
+            console.error(`Error indexing precedents for tag ${tag}:`, e.message);
+          }
         }
       }
     } catch (e) {

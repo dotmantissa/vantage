@@ -143,10 +143,14 @@ router.get('/markets/:id/position/:address', async (req, res) => {
     const { market: marketContractAddress } = getContractAddresses();
     const normAddr = address.toLowerCase();
 
-    // 1. Read on-chain position
+    // 1. Read on-chain position. Relayed writes name the authenticated user as
+    // the actor, so the chain already holds the position under this address and
+    // is the authority on it. The Postgres cache is a fallback for when the read
+    // fails or has not been indexed yet, never something to add on top.
     let onChainShares = {};
     let onChainLp = '0';
     let claimableBal = '0';
+    let onChainOk = false;
 
     try {
       const rawPos = await client.readContract({
@@ -157,6 +161,7 @@ router.get('/markets/:id/position/:address', async (req, res) => {
       const pos = typeof rawPos === 'string' ? JSON.parse(rawPos || '{}') : (rawPos || {});
       onChainShares = pos.shares || {};
       onChainLp = pos.lp_shares || '0';
+      onChainOk = true;
     } catch (e) {
       console.warn(`[Position] on-chain get_position failed for ${address}:`, e.message);
     }
@@ -186,24 +191,20 @@ router.get('/markets/:id/position/:address', async (req, res) => {
       }
     } catch {}
 
-    // Merge positions
+    // Chain wins where it answered; the cache only fills a gap.
     const mergedShares = {};
     const allKeys = new Set([...Object.keys(onChainShares), ...Object.keys(dbShares)]);
-    const isRelayer = relayerAccount && normAddr === relayerAccount.address.toLowerCase();
+    const onChainHasPosition =
+      Object.values(onChainShares).some(v => BigInt(v || '0') > 0n) || BigInt(onChainLp || '0') > 0n;
+    const trustChain = onChainOk && onChainHasPosition;
 
     for (const k of allKeys) {
       const onChainVal = BigInt(onChainShares[k] || '0');
       const dbVal = BigInt(dbShares[k] || '0');
-      if (isRelayer) {
-        mergedShares[k] = (onChainVal > 0n ? onChainVal : dbVal).toString();
-      } else {
-        mergedShares[k] = (onChainVal + dbVal).toString();
-      }
+      mergedShares[k] = (trustChain ? onChainVal : dbVal).toString();
     }
 
-    const mergedLp = isRelayer
-      ? (BigInt(onChainLp || '0') > 0n ? onChainLp : dbLp)
-      : (BigInt(onChainLp || '0') + BigInt(dbLp || '0')).toString();
+    const mergedLp = trustChain ? String(onChainLp || '0') : String(dbLp || '0');
 
     // 3. Fallback: if both are 0, check trades table for this trader
     const hasAnyShares = Object.values(mergedShares).some(v => BigInt(v || '0') > 0n) || BigInt(mergedLp || '0') > 0n;
@@ -772,33 +773,86 @@ function extractContractResult(fullTx) {
 }
 
 /**
+ * Contract writes that take a trailing `actor` argument.
+ *
+ * The relayer signs with DEPLOYER_KEY, so without this every market would be
+ * authored by the relayer, every position would accrue to it, and every bond
+ * and credit would be its own. VantageMarket lets an authorized relayer name
+ * the user it is acting for, and records authorship, positions, bonds, and
+ * credits against that address instead. The value here is the method's
+ * positional shape before `actor`, used to pad short argument lists so the
+ * actor always lands in the right slot.
+ */
+const ACTOR_AWARE_WRITES = {
+  compile_market: ['', 0, '0', '', '', ''],
+  buy: ['', 0, '0'],
+  sell: ['', 0, '0', '0'],
+  add_liquidity: [''],
+  remove_liquidity: ['', '0'],
+  challenge: ['', ''],
+  appeal: [''],
+  resolve: [''],
+  withdraw: [],
+};
+
+/**
+ * The on-chain principal for a relayed write: the Privy-verified wallet of the
+ * caller, never anything the request body claims.
+ */
+function authenticatedActor(req) {
+  const address = req.user?.address;
+  if (!address || !/^0x[0-9a-fA-F]{40}$/.test(address)) return null;
+  return address.toLowerCase();
+}
+
+/**
+ * Append the authenticated actor to a method's argument list, padding any
+ * optional parameters the caller left off.
+ */
+function withActor(method, args, actor) {
+  const shape = ACTOR_AWARE_WRITES[method];
+  if (!shape) return [...(args || [])];
+  const padded = shape.map((fallback, idx) => (args?.[idx] !== undefined ? args[idx] : fallback));
+  return [...padded, actor];
+}
+
+/**
  * Relayer execution engine: executes on-chain intelligent contract calls via deployer key
  */
 async function handleRelayRequest(req, res) {
   try {
-    const { action, method, market_id, args = [], value_wei = '0', caller } = req.body;
+    const { action, method, market_id, args = [], value_wei = '0' } = req.body;
     const { market: marketContractAddress } = getContractAddresses();
 
     if (!relayerAccount) {
       return res.status(500).json({ error: 'Relayer private key (DEPLOYER_KEY) is not configured in backend environment' });
     }
 
+    const actor = authenticatedActor(req);
+    if (!actor) {
+      return res.status(400).json({
+        error: 'Authenticated account has no wallet address, so no on-chain principal can be recorded',
+      });
+    }
+
     if (action === 'compile_market') {
-      const { question, close_time, seed_liquidity_wei, extra_sources_csv, value_wei: createValueWei, author } = req.body;
+      const { question, close_time, seed_liquidity_wei, extra_sources_csv, value_wei: createValueWei } = req.body;
       if (!question || !close_time) {
         return res.status(400).json({ error: 'Missing required market creation parameters' });
       }
 
-      console.log(`[Relay] Broadcasting compile_market for "${question}"...`);
+      console.log(`[Relay] Broadcasting compile_market for "${question}" as ${actor}...`);
       const txHash = await client.writeContract({
         address: marketContractAddress,
         functionName: 'compile_market',
-        args: [
+        args: withActor('compile_market', [
           String(question).trim(),
           Number(close_time),
           String(seed_liquidity_wei || '5000000000000000000'),
           String(extra_sources_csv || ''),
-        ],
+          '',
+          '',
+        ], actor),
         value: BigInt(createValueWei || '10000000000000000000'),
       });
 
@@ -807,6 +861,7 @@ async function handleRelayRequest(req, res) {
         success: true,
         pending: true,
         tx_hash: txHash,
+        author: actor,
         message: 'Market compilation transaction broadcast to GenLayer StudioNet. Awaiting validator consensus...',
       });
     }
@@ -816,15 +871,16 @@ async function handleRelayRequest(req, res) {
       return res.json({ message: 'Sync complete' });
     }
 
-    // Prepare arguments with appropriate type conversions
-    const resolvedArgs = (args || []).map((arg, idx) => {
+    // Prepare arguments with appropriate type conversions, then attribute the
+    // write to the authenticated user rather than to the relayer's key.
+    const resolvedArgs = withActor(method, args, actor).map((arg, idx) => {
       if (['buy', 'sell'].includes(method) && idx === 1) {
         return Number(arg);
       }
       return String(arg);
     });
 
-    console.log(`[Relay] Executing ${method} on market ${market_id} with value ${value_wei} wei...`);
+    console.log(`[Relay] Executing ${method} on market ${market_id} as ${actor} with value ${value_wei} wei...`);
 
     const txHash = await client.writeContract({
       address: marketContractAddress,
@@ -856,7 +912,7 @@ async function handleRelayRequest(req, res) {
       console.warn('[Relay] Failed to query full tx consensus data:', e.message);
     }
 
-    const effectiveCaller = String(caller || relayerAccount.address).toLowerCase();
+    const effectiveCaller = actor;
 
     // If trade action, record in positions and trades tables
     if (method === 'buy' || method === 'sell') {
@@ -964,9 +1020,13 @@ async function handleRelayRequest(req, res) {
 }
 
 /**
- * Transaction Relay: executes on-chain writeContract calls
+ * Transaction Relay: executes on-chain writeContract calls.
+ *
+ * Authentication is mandatory. The relayer pays the gas, but the on-chain
+ * principal is the Privy-verified wallet of the signed-in user, so authorship,
+ * positions, bonds, and credits belong to them and not to DEPLOYER_KEY.
  */
-router.post('/relay', handleRelayRequest);
+router.post('/relay', requireAuth, handleRelayRequest);
 
 /**
  * Query status of an on-chain transaction

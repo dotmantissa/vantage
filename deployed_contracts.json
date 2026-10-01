@@ -3,15 +3,15 @@
   "chainId": 61999,
   "rpcUrl": "https://studio.genlayer.com/api",
   "deployer": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
-  "deployedAt": "2026-09-28T14:23:32.737Z",
+  "deployedAt": "2026-10-01T04:37:28.735Z",
   "contracts": {
     "VantageCharter": {
       "address": "0xBfB34B0b1dCa954823fBbefBAc815c4136d815e0",
       "txHash": "0xa22710ffc4ee9c5bd1f84624b3750d563057610d9308c261b6f2e71bb34436eb"
     },
     "VantageMarket": {
-      "address": "0x96767e45874e697e5f2d059729890Ba5478e85b4",
-      "txHash": "0x9d051badbb27a3ef1d2cfa82dccefaff61759ee5267fcf4a74b25febba405b67"
+      "address": "0xe143684F1f1fC777d79401C7C26b2123A1c51fe1",
+      "txHash": "0x9ae946b0ad6ffb37c6e77679804af71a0002b43175053514133a631dc0f9a52a"
     }
   }
 }

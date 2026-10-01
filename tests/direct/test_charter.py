@@ -11,6 +11,8 @@ All nondet and cross-contract calls are mocked at the VMContext level.
 import json
 import pytest
 
+import precedent_rules
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -386,3 +388,122 @@ class TestPrecedentRegistry:
         )
         stats = json.loads(contract.get_registry_stats())
         assert stats["total_precedents"] == 2
+
+
+# ---------------------------------------------------------------------------
+# The charter half of the settlement write back
+# ---------------------------------------------------------------------------
+# tests/direct/test_market.py proves VantageMarket.settle emits a
+# record_precedent call whose arguments satisfy precedent_rules. These tests
+# prove the registry accepts a payload of exactly that shape and serves it back
+# through the lookups the compiler uses. Direct mode loads one contract per
+# test, so the write back is verified from both ends against the shared rules.
+
+
+class TestSettlementWriteBack:
+    def _register_market(self, contract, direct_vm, direct_owner):
+        """Authorize a market contract as a registrar, the way deploy.mjs does."""
+        market_address = "0x" + "11" * 20
+        with direct_vm.prank(direct_owner):
+            contract.authorize_registrar(market_address)
+        return market_address
+
+    def test_settled_market_payload_is_accepted(self, direct_deploy, direct_owner, direct_vm):
+        payload = dict(precedent_rules.SETTLED_MARKET_PAYLOAD)
+        precedent_rules.assert_charter_accepts(payload)
+
+        contract = deploy_charter(direct_deploy)
+        market_address = self._register_market(contract, direct_vm, direct_owner)
+
+        # Called positionally, exactly as the market emits it.
+        with direct_vm.prank(market_address):
+            raw = contract.record_precedent(*precedent_rules.positional(payload))
+
+        record = json.loads(raw)
+        assert record["precedent_id"] == payload["precedent_id"]
+        assert record["market_id"] == payload["market_id"]
+        assert record["outcome"] == payload["outcome"]
+        assert record["reason_code"] == payload["reason_code"]
+        assert record["predicate_type"] == payload["predicate_type"]
+        assert record["charter_version"] == payload["charter_version"]
+        assert record["spec_pattern"] == payload["spec_pattern"]
+        assert record["tags"] == precedent_rules.usable_tags(payload["tags_csv"])
+        assert record["recorded_by"].lower() == market_address.lower()
+
+        stats = json.loads(contract.get_registry_stats())
+        assert stats["total_precedents"] == 1
+
+    def test_written_precedent_is_served_back_by_tag(self, direct_deploy, direct_owner, direct_vm):
+        payload = dict(precedent_rules.SETTLED_MARKET_PAYLOAD)
+        contract = deploy_charter(direct_deploy)
+        market_address = self._register_market(contract, direct_vm, direct_owner)
+        with direct_vm.prank(market_address):
+            contract.record_precedent(*precedent_rules.positional(payload))
+
+        # lookup_by_tag takes one argument: the tag.
+        for tag in precedent_rules.usable_tags(payload["tags_csv"]):
+            found = json.loads(contract.lookup_by_tag(tag))
+            assert found["tag"] == tag
+            assert found["count"] == 1, (tag, found)
+            assert found["matches"][0]["precedent_id"] == payload["precedent_id"]
+
+        # And the compiler's own lookup finds it, ranked by tag overlap.
+        for_spec = json.loads(contract.lookup_for_spec(payload["tags_csv"], 5))
+        assert for_spec["count"] == 1
+        assert for_spec["matches"][0]["tag_overlap"] == len(
+            precedent_rules.usable_tags(payload["tags_csv"])
+        )
+
+        by_market = json.loads(contract.get_precedents_for_market(payload["market_id"]))
+        assert by_market["count"] == 1
+        assert json.loads(contract.get_precedent(payload["precedent_id"]))["outcome"] == payload["outcome"]
+
+    def test_lookup_by_tag_takes_exactly_one_argument(self, direct_deploy, direct_owner, direct_vm):
+        contract = deploy_charter(direct_deploy)
+        market_address = self._register_market(contract, direct_vm, direct_owner)
+        with direct_vm.prank(market_address):
+            contract.record_precedent(
+                *precedent_rules.positional(dict(precedent_rules.SETTLED_MARKET_PAYLOAD))
+            )
+
+        assert json.loads(contract.lookup_by_tag("ethereum"))["count"] == 1
+        # A second positional argument is not part of the declared signature.
+        with pytest.raises(Exception):
+            contract.lookup_by_tag("ethereum", 20)
+
+    def test_an_unauthorized_market_cannot_write_precedent(
+        self, direct_deploy, direct_owner, direct_vm, direct_alice
+    ):
+        contract = deploy_charter(direct_deploy)
+        with direct_vm.prank(direct_alice):
+            with direct_vm.expect_revert("[EXPECTED]"):
+                contract.record_precedent(
+                    *precedent_rules.positional(dict(precedent_rules.SETTLED_MARKET_PAYLOAD))
+                )
+
+    def test_every_settlement_reason_code_is_in_the_enum(self, direct_deploy, direct_owner, direct_vm):
+        """
+        The reason codes a settlement can carry all have to be recordable, or the
+        write back would revert on exactly the markets that were contested.
+        """
+        contract = deploy_charter(direct_deploy)
+        market_address = self._register_market(contract, direct_vm, direct_owner)
+        settlement_reasons = (
+            "QUORUM_MET",
+            "CHALLENGE_UPHELD",
+            "CHALLENGE_REJECTED",
+            "APPEAL_UPHELD",
+            "APPEAL_REJECTED",
+        )
+        for index, reason in enumerate(settlement_reasons):
+            assert reason in precedent_rules.REASON_CODES
+            payload = dict(precedent_rules.SETTLED_MARKET_PAYLOAD)
+            payload["precedent_id"] = f"prec-reason-{index}"
+            payload["market_id"] = f"vm{index}-reasoncheck"
+            payload["reason_code"] = reason
+            precedent_rules.assert_charter_accepts(payload)
+            with direct_vm.prank(market_address):
+                stored = json.loads(contract.record_precedent(*precedent_rules.positional(payload)))
+            assert stored["reason_code"] == reason
+
+        assert json.loads(contract.get_registry_stats())["total_precedents"] == len(settlement_reasons)

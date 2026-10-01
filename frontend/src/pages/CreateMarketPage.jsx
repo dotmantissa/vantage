@@ -31,7 +31,7 @@ const EXAMPLE_QUESTIONS = [
 ];
 
 export default function CreateMarketPage({ onMarketCreated }) {
-  const { user } = usePrivy();
+  const { user, getAccessToken } = usePrivy();
   const userAddress = user?.wallet?.address;
 
   // Multi-stage flow: 1 = Question Formulation & Validator Consultation; 2 = Validator Synthesis & Deployment
@@ -176,9 +176,20 @@ export default function CreateMarketPage({ onMarketCreated }) {
 
       setSubmitStep('Broadcasting transaction to GenLayer StudioNet...');
 
+      // The relayer pays the gas, but the market is authored on chain by the
+      // signed-in user. The backend derives that address from this token, so the
+      // request body never gets to claim an author.
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
+        throw new Error('Sign in before creating a market so it can be authored on chain in your name.');
+      }
+
       const res = await fetch('/api/relay', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
         body: JSON.stringify({
           action: 'compile_market',
           question: question.trim(),
@@ -186,7 +197,6 @@ export default function CreateMarketPage({ onMarketCreated }) {
           seed_liquidity_wei: depositLiquidity,
           extra_sources_csv: selectedSources.join(','),
           value_wei: totalValueWei,
-          author: userAddress || '0xBC1399c55538eC034d4Da550C03c34Ae0C357f53',
         }),
       });
 

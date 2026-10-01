@@ -21,7 +21,7 @@ import {
 import { CONTRACTS, formatGen, parseGenToWei, formatDateTime, bpsToPercent } from '../lib/contracts';
 
 export default function MarketDetailPage({ marketId, onBack }) {
-  const { user, authenticated } = usePrivy();
+  const { user, authenticated, getAccessToken } = usePrivy();
   const { wallets } = useWallets();
   const userAddress = user?.wallet?.address;
 
@@ -167,20 +167,29 @@ export default function MarketDetailPage({ marketId, onBack }) {
         }
       }
 
-      // 2. Gasless transaction relayer execution
+      // 2. Gasless transaction relayer execution. The relayer signs and pays,
+      // but names the authenticated user as the actor, so the position, bond, or
+      // credit this call creates belongs to them on chain. The backend reads that
+      // address from the token, so the payload carries no caller of its own.
       if (!executedOnChain) {
         setActionMessage({ type: 'info', text: `Broadcasting gasless ${method} via Vantage Relayer to StudioNet...` });
+        const accessToken = await getAccessToken();
+        if (!accessToken) {
+          throw new Error('Sign in so this action can be recorded on chain in your name.');
+        }
         const payload = {
           market_id: marketId,
           method,
           args,
           value_wei: valueWei,
-          caller: userAddress || '0xBC1399c55538eC034d4Da550C03c34Ae0C357f53',
         };
 
         const res = await fetch('/api/relay', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
           body: JSON.stringify(payload),
         });
 
@@ -238,6 +247,12 @@ export default function MarketDetailPage({ marketId, onBack }) {
   const handleAppeal = () => {
     const bondWei = parseGenToWei('25.0'); // 25 GEN appeal bond
     executeContractCall('appeal', [marketId], bondWei);
+  };
+
+  // Settlement credits a balance inside the contract; withdraw is what turns it
+  // back into GEN in the user's own account.
+  const handleWithdraw = () => {
+    executeContractCall('withdraw', [], '0');
   };
 
   const handleResolve = () => executeContractCall('resolve', [marketId]);
@@ -642,6 +657,36 @@ export default function MarketDetailPage({ marketId, onBack }) {
                     {formatGen(position?.lp_shares || '0')}
                   </div>
                 </div>
+
+                <div style={{
+                  background: 'var(--paper-sunk)',
+                  padding: '12px',
+                  borderRadius: 'var(--radius-control)',
+                  border: 'var(--border-rule)',
+                }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--ink-muted)' }}>CLAIMABLE</div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 600, marginTop: 4 }}>
+                    {formatGen(position?.claimable_balance_wei || '0')} GEN
+                  </div>
+                </div>
+              </div>
+
+              {/* Settlement credits a balance inside the contract. Withdrawing is
+                  what turns one winning share into one wei in the holder's own
+                  account, so the value-bearing path ends here rather than at
+                  SETTLED. */}
+              <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <button
+                  className="btn-primary"
+                  onClick={handleWithdraw}
+                  disabled={actionLoading || BigInt(position?.claimable_balance_wei || '0') === 0n}
+                >
+                  {actionLoading ? 'Working...' : 'Withdraw claimable GEN'}
+                </button>
+                <span style={{ fontSize: '0.76rem', color: 'var(--ink-muted)' }}>
+                  Each winning share redeems for exactly one wei. Settled payouts, returned
+                  bonds, creator fees and sale proceeds all land here until you withdraw them.
+                </span>
               </div>
             </div>
           )}
