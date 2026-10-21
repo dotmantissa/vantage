@@ -9,3 +9,12 @@ test('saved execution failures remain recoverable after navigation',async({page}
  await page.route(`**/api/v2/transactions/${hash}`,r=>r.fulfill({json:{hash,status:'FINALIZED',execution:'FINISHED_WITH_ERROR',successful:false,finalized:true,appeal:{available:false,eligible:false}}}));
  await page.goto('/portfolio');await expect(page.getByText('Contract execution failed')).toBeVisible();await expect(page.getByText(`${hash.slice(0,12)}…${hash.slice(-8)}`)).toBeVisible();
 });
+test('locked close time updates controls without a new chain response',async({page})=>{
+ await setup(page);
+ const closing={...market,spec:{...market.spec,close_time:Math.floor(Date.now()/1000)+6}};
+ await page.route('**/api/v2/markets/m-1',r=>r.fulfill({json:closing}));
+ await page.goto('/markets/m-1');
+ await page.getByRole('tab',{name:'Ruling',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Close trading',exact:true})).toBeVisible({timeout:12000});
+ await expect(page.getByRole('button',{name:'Trading closed',exact:true})).toBeDisabled();
+});

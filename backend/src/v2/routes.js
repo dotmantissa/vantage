@@ -115,6 +115,6 @@ router.get('/health',route(async(_req,res)=>{
   const failures=await sql`SELECT id,kind,state,last_error,updated_at FROM v2_jobs WHERE last_error IS NOT NULL AND state IN ('failed','pending') ORDER BY updated_at DESC LIMIT 10`;
   const pending=config.configured?await pendingBroadcasts(sql,config):[];
   const archive=process.env.VANTAGE_ARCHIVE==='postgres'?'postgres':process.env.R2_ENDPOINT&&process.env.R2_BUCKET&&process.env.R2_ACCESS_KEY_ID&&process.env.R2_SECRET_ACCESS_KEY?'r2':null;
-  res.json({status:pending.length||failures.some(j=>j.state==='failed')?'degraded':'ok',configured:config.configured,jobs:rows,failures,pending_transactions:pending,last_index:lag[0]?.last_index,archive_configured:!!archive,archive_backend:archive,keeper_configured:!!(process.env.KEEPER_KEY&&process.env.CRON_SECRET),last_worker:runs[0]||null});
+  res.json({status:pending.length||failures.some(j=>j.state==='failed')||runs[0]?.body?.error?'degraded':'ok',configured:config.configured,jobs:rows,failures,pending_transactions:pending,last_index:lag[0]?.last_index,archive_configured:!!archive,archive_backend:archive,keeper_configured:!!(process.env.KEEPER_KEY&&process.env.CRON_SECRET),last_worker:runs[0]||null});
 }));
 export default router;
