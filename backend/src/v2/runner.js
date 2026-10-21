@@ -18,9 +18,9 @@ export async function schedule(config) {
     else if(['CLOSED','AWAITING_EVIDENCE','CHALLENGED','APPEALED'].includes(m.state)&&now>=Math.max(m.spec.observation.end,m.next_retry||0))method='resolve';
     else if(m.state==='PROVISIONAL'&&now>m.appeal_deadline)method='finalize';
     else if(m.state==='FINAL')method='settle';
-    if(method)await enqueue(sql,`${config.network}:${config.contracts.market}:${mid}:${method}:${m.state}:${m.resolution_revision}:${m.next_retry||0}`,'lifecycle',{market_id:mid,method});
+    if(method)await enqueue(sql,`${config.network}:${config.contracts.market}:${mid}:${method}:${m.state}:${m.resolution_revision}:${m.next_retry||0}`,'lifecycle',{market_id:mid,method,contract:config.contracts.market});
     if(['OPEN','CLOSED','AWAITING_EVIDENCE','PROVISIONAL','CHALLENGED','APPEALED'].includes(m.state)&&now<= (m.terminal_deadline||m.grace_deadline)) {
-      for(let i=0;i<m.spec.sources.length;i++)await enqueue(sql,`${config.network}:${config.contracts.market}:${mid}:evidence:${i}:${Math.floor(now/900)}`,'evidence',{market_id:mid,source_index:i});
+      for(let i=0;i<m.spec.sources.length;i++)await enqueue(sql,`${config.network}:${config.contracts.market}:${mid}:evidence:${i}:${Math.floor(now/900)}`,'evidence',{market_id:mid,source_index:i,contract:config.contracts.market});
     }
   }
 }
@@ -37,6 +37,9 @@ export async function handle(job,config) {
     if(!result.finalized&&!['UNDETERMINED','CANCELED','LEADER_TIMEOUT','VALIDATORS_TIMEOUT'].includes(result.status))throw new Error('Transaction still pending');
     return;
   }
+  // A cutover must never apply an old market's scheduled action to the same
+  // local ID in another contract. Unscoped legacy jobs require reconciliation.
+  if(job.payload.contract?.toLowerCase()!==config.contracts.market.toLowerCase())return;
   if(job.payload.submitted_hash){
     if(job.payload.actor)await sql`INSERT INTO v2_transactions(network,tx_hash,actor,method,market_id) VALUES(${config.network},${job.payload.submitted_hash},${job.payload.actor},${job.payload.method||'record_evidence'},${job.payload.market_id}) ON CONFLICT DO NOTHING`;
     await enqueue(sql,`track:${job.payload.submitted_hash}`,'track',{hash:job.payload.submitted_hash});return;

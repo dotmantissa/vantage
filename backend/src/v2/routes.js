@@ -105,7 +105,8 @@ router.get('/health',route(async(_req,res)=>{
   const config=configuration();if(!process.env.DATABASE_URL)return res.json({status:'unconfigured',configured:config.configured,database:false});
   await ready();const rows=await sql`SELECT state,count(*)::int AS count FROM v2_jobs GROUP BY state`;const lag=await sql`SELECT max(indexed_at) AS last_index FROM v2_markets WHERE network=${config.network}`;
   const runs=await sql`SELECT started_at,finished_at,body FROM v2_service_runs ORDER BY started_at DESC LIMIT 1`;
+  const failures=await sql`SELECT id,kind,last_error,updated_at FROM v2_jobs WHERE state='failed' ORDER BY updated_at DESC LIMIT 10`;
   const archive=process.env.VANTAGE_ARCHIVE==='postgres'?'postgres':process.env.R2_ENDPOINT&&process.env.R2_BUCKET&&process.env.R2_ACCESS_KEY_ID&&process.env.R2_SECRET_ACCESS_KEY?'r2':null;
-  res.json({status:'ok',configured:config.configured,jobs:rows,last_index:lag[0]?.last_index,archive_configured:!!archive,archive_backend:archive,keeper_configured:!!(process.env.KEEPER_KEY&&process.env.CRON_SECRET),last_worker:runs[0]||null});
+  res.json({status:'ok',configured:config.configured,jobs:rows,failures,last_index:lag[0]?.last_index,archive_configured:!!archive,archive_backend:archive,keeper_configured:!!(process.env.KEEPER_KEY&&process.env.CRON_SECRET),last_worker:runs[0]||null});
 }));
 export default router;
