@@ -73,6 +73,9 @@ export async function runOnce({budgetMs=35000,maxJobs=4}={}) {
   if(!locks.length)return {...result,skipped:'Another keeper invocation holds the lease'};
   await sql`INSERT INTO v2_service_runs(owner,started_at) VALUES(${owner},now())`;
   try {
+    // Preserve the journal, but retire obsolete mutation jobs after a cutover.
+    // Their broadcasts remain discoverable in transactions/retained chain state.
+    await sql`UPDATE v2_jobs SET state='done',lease_until=NULL,updated_at=now() WHERE kind IN ('lifecycle','evidence') AND state IN ('pending','failed') AND (payload->>'contract' IS NULL OR lower(payload->>'contract')<>${config.contracts.market.toLowerCase()})`;
     result.index=await indexV2(sql,config);
     await schedule(config);
     const rows=await sql`SELECT body FROM v2_evidence WHERE network=${config.network} AND contract=${config.contracts.market} AND archive_key IS NULL LIMIT 100`;
