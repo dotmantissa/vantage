@@ -32,3 +32,9 @@ def test_invalid_policy_cannot_be_published(direct_deploy):
     body['sources'][1]['id'] = 'github-web'; body['fee_bps'] = 1001
     with pytest.raises(Exception, match='fee split'):
         c.publish_charter('v2.2', json.dumps(body))
+
+def test_malformed_template_cannot_be_published(direct_deploy):
+    c=direct_deploy(PATH);body=json.loads(c.get_charter());body['version']='v2.2'
+    body['templates']=[{'id':'bad','name':'Malformed','criteria':['tiny']}]
+    with pytest.raises(Exception,match='template criteria'):
+        c.publish_charter('v2.2',json.dumps(body))

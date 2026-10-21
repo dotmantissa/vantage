@@ -19,6 +19,8 @@ def market(direct_deploy,direct_vm):
     def hook(vm,request):
         if 'CallContract' in request:
             method=request['CallContract'].get('calldata',{}).get('method')
+            if method=='get_market':
+                return bytes([0])+calldata.encode(contract.get_market(request['CallContract']['calldata']['args'][0]))
             return bytes([0])+calldata.encode(json.dumps(CHARTER) if method=='get_charter' else '[]')
         if 'PostMessage' in request:
             vm.v2_messages=getattr(vm,'v2_messages',[])+[request['PostMessage']]
@@ -26,7 +28,8 @@ def market(direct_deploy,direct_vm):
     direct_vm._gl_call_hook=hook
     direct_vm.mock_web('.*api.github.com.*',{'status':200,'body':'A public release exists and is available. record=release-1'})
     direct_vm.mock_llm('.*Review a prediction market.*',json.dumps({'resolvable':True,'issues':[],'relevant_precedents':[],'summary':'Specific public delivery criteria.'}))
-    return direct_deploy(PATH,charter_address=ADDR,memory_address=ADDR)
+    contract=direct_deploy(PATH,charter_address=ADDR,memory_address=ADDR)
+    return contract
 
 def activate(market,direct_vm,seed=10000):
     draft=json.loads(market.compile_draft(json.dumps(proposal())))
@@ -185,3 +188,35 @@ def test_draft_recovery_is_author_scoped_and_paginated(market,direct_vm,direct_b
     assert json.loads(market.list_drafts(owner))['drafts'][0]['spec_hash']==draft['spec_hash']
     assert json.loads(market.list_drafts(str(direct_bob)))['drafts']==[]
     assert json.loads(market.list_drafts(owner,1))['drafts']==[]
+
+def test_incomplete_criterion_keeps_independent_support(market,direct_vm):
+    m=activate(market,direct_vm)
+    evidence_mock(direct_vm,int(time.time()),criteria=[{'id':'released','decision':'MET','citation':'A public release exists'},{'id':'available','decision':'INSUFFICIENT','citation':''}])
+    market.record_evidence(m['market_id'],0)
+    warp_past_close(m,direct_vm);market.close_market(m['market_id'])
+    market.resolve(m['market_id'])
+    r=json.loads(market.get_resolution_record(m['market_id']))
+    assert r['criteria'][0]['decision']=='MET'
+    assert r['criteria'][1]['decision']=='INSUFFICIENT'
+    assert r['winner'] is None
+
+def test_numeric_value_is_decided_deterministically_without_llm_label(market,direct_vm):
+    p=proposal();p.update(kind='numeric',outcomes=['Yes','No'],comparator='gte',threshold='42.125',units='units')
+    d=json.loads(market.compile_draft(json.dumps(p)));direct_vm.value=10500
+    m=json.loads(market.activate_draft(d['id'],d['spec_hash'],'10000'));direct_vm.value=0
+    evidence_mock(direct_vm,int(time.time()),numeric_value='42.125',criteria=[{'id':'released','decision':'INSUFFICIENT','citation':''},{'id':'available','decision':'INSUFFICIENT','citation':''}])
+    market.record_evidence(m['market_id'],0);warp_past_close(m,direct_vm);market.close_market(m['market_id'])
+    result=json.loads(market.resolve(m['market_id']))
+    assert result['winning_outcome']==0
+
+def test_invalid_numeric_sign_rejected(market):
+    p=proposal();p.update(kind='numeric',outcomes=['Yes','No'],comparator='gte',threshold='--42',units='units')
+    with pytest.raises(Exception,match='Plain decimal'):
+        market.compile_draft(json.dumps(p))
+
+def test_predeadline_spam_cannot_exhaust_observation_budget(market,direct_vm):
+    m=activate(market,direct_vm);evidence_mock(direct_vm,int(time.time()))
+    for _ in range(CHARTER['max_evidence']//2):
+        market.record_evidence(m['market_id'],0)
+    with pytest.raises(Exception,match='reserved'):
+        market.record_evidence(m['market_id'],0)

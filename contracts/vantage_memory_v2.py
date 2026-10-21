@@ -62,6 +62,10 @@ class VantageMemoryV2(gl.Contract):
         return pid
 
     @gl.public.view
+    def get_config(self) -> str:
+        return json.dumps({"owner": str(self.owner), "registrar": str(self.registrar), "model": "all-MiniLM-L6-v2", "dimensions": 384})
+
+    @gl.public.view
     def search(self, question: str, limit: int = 5) -> str:
         if not 1 <= int(limit) <= 10 or len(question) > 600:
             raise gl.vm.UserError("[EXPECTED] Search exceeds bound")

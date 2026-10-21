@@ -77,6 +77,14 @@ class VantageCharterV2(gl.Contract):
             ids.append(source["id"])
         if not isinstance(body["templates"], list) or len(body["templates"]) > 16:
             raise gl.vm.UserError("[EXPECTED] Invalid templates")
+        template_ids = []
+        for template in body["templates"]:
+            if not isinstance(template, dict) or not isinstance(template.get("id"), str) or not template["id"] or template["id"] in template_ids or not isinstance(template.get("name"), str) or not template["name"]:
+                raise gl.vm.UserError("[EXPECTED] Invalid template identity")
+            criteria = template.get("criteria")
+            if not isinstance(criteria, list) or not 1 <= len(criteria) <= 8 or any(not isinstance(c, str) or not 8 <= len(c) <= 500 for c in criteria):
+                raise gl.vm.UserError("[EXPECTED] Invalid template criteria")
+            template_ids.append(template["id"])
         self.versions[version] = json.dumps(body, sort_keys=True, separators=(",", ":"))
         self.version_ids.append(version)
         return version
