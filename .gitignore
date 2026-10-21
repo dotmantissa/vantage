@@ -43,3 +43,7 @@ pnpm-debug.log*
 # Internal working notes
 .task-checklist.md
 .env*
+playwright-report/
+test-results/
+deployment-v2.pending.json*
+deployed_v2.json*

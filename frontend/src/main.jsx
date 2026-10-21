@@ -1,57 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { PrivyProvider } from '@privy-io/react-auth';
+import {PrivyProvider} from '@privy-io/react-auth';
 import App from './App';
+import {AuthBridge} from './v2/auth';
+import networks from '../../shared/networks.json';
 import './styles/tokens.css';
 import './styles/v2.css';
-
-const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || 'cmul43s3k01p20cjnixbpbsvf';
-
-// Define GenLayer StudioNet chain
-const genlayerStudioNet = {
-  id: 61999,
-  name: 'GenLayer StudioNet',
-  network: 'genlayer-studionet',
-  nativeCurrency: {
-    name: 'GEN',
-    symbol: 'GEN',
-    decimals: 18,
-  },
-  rpcUrls: {
-    default: {
-      http: ['https://studio.genlayer.com/api'],
-    },
-    public: {
-      http: ['https://studio.genlayer.com/api'],
-    },
-  },
-  blockExplorers: {
-    default: {
-      name: 'GenLayer Studio',
-      url: 'https://studio.genlayer.com',
-    },
-  },
-};
-
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <PrivyProvider
-      appId={PRIVY_APP_ID}
-      config={{
-        loginMethods: ['email', 'wallet'],
-        appearance: {
-          theme: 'light',
-          accentColor: '#53745f',
-          showWalletLoginFirst: false,
-        },
-        embeddedWallets: {
-          createOnLogin: 'users-without-wallets',
-        },
-        defaultChain: genlayerStudioNet,
-        supportedChains: [genlayerStudioNet],
-      }}
-    >
-      <App />
-    </PrivyProvider>
-  </React.StrictMode>
-);
+const id=import.meta.env.VITE_PRIVY_APP_ID;
+const supportedChains=Object.entries(networks.networks).map(([name,n])=>({id:n.chainId,name:`GenLayer ${name}`,nativeCurrency:{name:'GEN',symbol:'GEN',decimals:18},rpcUrls:{default:{http:[n.rpcUrl]}},blockExplorers:{default:{name:'GenLayer',url:n.explorerUrl}}}));
+const selected=import.meta.env.VITE_VANTAGE_NETWORK||networks.defaultNetwork;
+const defaultChain=supportedChains.find(c=>c.id===networks.networks[selected]?.chainId)||supportedChains[0];
+ReactDOM.createRoot(document.getElementById('root')).render(<React.StrictMode>{id?<PrivyProvider appId={id} config={{loginMethods:['email','wallet'],appearance:{theme:'light',accentColor:'#354ee7'},embeddedWallets:{createOnLogin:'users-without-wallets'},defaultChain,supportedChains}}><AuthBridge><App/></AuthBridge></PrivyProvider>:<App/>}</React.StrictMode>);

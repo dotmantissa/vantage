@@ -41,10 +41,15 @@ router.get('/markets/:id/quote',route(async(req,res)=>{
   if(!['buy','sell'].includes(req.query.action)||!/^\d{1,78}$/.test(String(req.query.amount))||!/^\d$/.test(String(req.query.outcome)))return res.status(400).json({error:'Invalid quote parameters'});
   res.json(await read(req.query.action==='buy'?'quote_buy':'quote_sell',[req.params.id,Number(req.query.outcome),req.query.amount]));
 }));
+router.get('/drafts',route(async(req,res)=>{
+  if(!/^0x[0-9a-fA-F]{40}$/.test(String(req.query.author)))return res.status(400).json({error:'Invalid author'});
+  if(!configuration().configured)return res.json({drafts:[],total:0});
+  res.json(await read('list_drafts',[req.query.author,Math.max(0,Number(req.query.offset)||0),50]));
+}));
 router.get('/drafts/:id',route(async(req,res)=>res.json(await read('get_draft',[req.params.id]))));
-router.get('/charter',route(async(_req,res)=>{
+router.get('/charter',route(async(req,res)=>{
   const config=configuration();if(!config.configured)return res.json({configured:false,sources:[],templates:[]});
-  res.json({...await read('get_charter',[],'charter'),configured:true});
+  res.json({...await read('get_charter',[String(req.query.version||'')],'charter'),configured:true});
 }));
 router.get('/precedents',route(async(req,res)=>{
   const config=configuration();if(!config.configured)return res.json({records:[],configured:false});
@@ -59,11 +64,13 @@ router.get('/portfolio/:address',route(async(req,res)=>{
 }));
 router.post('/transactions',requireAuth,route(async(req,res)=>{
   const {hash,method,market_id}=req.body;
-  if(!/^0x[0-9a-fA-F]{64}$/.test(hash)||!['compile_draft','activate_draft','buy','sell','record_evidence','add_liquidity','remove_liquidity','challenge','appeal','resolve','finalize','settle','claim','withdraw','close_market'].includes(method))return res.status(400).json({error:'Invalid transaction tracking request'});
+  if(!/^0x[0-9a-fA-F]{64}$/.test(hash)||!['compile_draft','activate_draft','buy','sell','record_evidence','add_liquidity','remove_liquidity','challenge','appeal','resolve','finalize','settle','claim','withdraw','close_market','void_expired'].includes(method))return res.status(400).json({error:'Invalid transaction tracking request'});
   await ready();const config=configuration();
   const tx=await chainClient(config).getTransaction({hash});
   const sender=String(tx?.from_address||tx?.from||tx?.sender||'').toLowerCase();
-  if(sender&&sender!==req.user.address)return res.status(403).json({error:'Transaction belongs to a different wallet'});
+  if(!sender||sender!==req.user.address)return res.status(403).json({error:'Transaction belongs to a different wallet'});
+  const destination=String(tx?.to_address||tx?.recipient||tx?.to||'').toLowerCase();
+  if(destination!==config.contracts.market?.toLowerCase())return res.status(403).json({error:'Transaction does not target the configured market contract'});
   await sql`INSERT INTO v2_transactions(network,tx_hash,actor,method,market_id) VALUES(${config.network},${hash},${req.user.address},${method},${market_id||null}) ON CONFLICT(network,tx_hash) DO NOTHING`;
   await enqueue(sql,`track:${hash}`,'track',{hash});res.status(202).json({hash});
 }));
@@ -80,6 +87,6 @@ router.delete('/watchlist/:id',requireAuth,route(async(req,res)=>{await ready();
 router.get('/health',route(async(_req,res)=>{
   const config=configuration();if(!process.env.DATABASE_URL)return res.json({status:'unconfigured',configured:config.configured,database:false});
   await ready();const rows=await sql`SELECT state,count(*)::int AS count FROM v2_jobs GROUP BY state`;const lag=await sql`SELECT max(indexed_at) AS last_index FROM v2_markets WHERE network=${config.network}`;
-  res.json({status:'ok',configured:config.configured,jobs:rows,last_index:lag[0]?.last_index});
+  res.json({status:'ok',configured:config.configured,jobs:rows,last_index:lag[0]?.last_index,archive_configured:!!(process.env.R2_ENDPOINT&&process.env.R2_BUCKET&&process.env.R2_ACCESS_KEY_ID&&process.env.R2_SECRET_ACCESS_KEY)});
 }));
 export default router;

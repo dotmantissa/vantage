@@ -299,6 +299,18 @@ LOCKED SPEC: """ + context + "\nEXPECTED PUBLISHER GROUP: " + manifest["publishe
         return self.drafts[draft_id]
 
     @gl.public.view
+    def list_drafts(self, author: str, offset: int = 0, limit: int = 50) -> str:
+        total = int(self.draft_count)
+        start = max(0, offset)
+        end = min(total, start + max(1, min(50, limit)))
+        rows = []
+        for i in range(start, end):
+            draft = self._decode(self.drafts["d-" + str(total - i)])
+            if draft["author"] == author.lower():
+                rows.append(draft)
+        return self._json({"drafts": rows, "total": total, "next_offset": end})
+
+    @gl.public.view
     def get_market(self, market_id: str) -> str:
         return self._json(self._market(market_id))
 

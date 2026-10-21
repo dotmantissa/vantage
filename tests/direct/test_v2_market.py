@@ -178,3 +178,10 @@ def test_liquidity_after_trade_preserves_claim_conservation(market,direct_vm,dir
         direct_vm.sender=who;market.claim(mid)
     book=json.loads(market.get_market(mid))
     assert int(book['payout']['paid_wei'])<=int(book['payout']['collateral_wei'])
+
+def test_draft_recovery_is_author_scoped_and_paginated(market,direct_vm,direct_bob):
+    draft=json.loads(market.compile_draft(json.dumps(proposal())))
+    owner=draft['author']
+    assert json.loads(market.list_drafts(owner))['drafts'][0]['spec_hash']==draft['spec_hash']
+    assert json.loads(market.list_drafts(str(direct_bob)))['drafts']==[]
+    assert json.loads(market.list_drafts(owner,1))['drafts']==[]

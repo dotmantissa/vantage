@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { useAuth } from './auth';
 import { useQueryClient } from '@tanstack/react-query';
 import { chains, createClient } from 'genlayer-js';
 import { api } from './api';
@@ -8,9 +8,10 @@ export function savedTransactions(){try{return JSON.parse(localStorage.getItem(S
 export function saveTransaction(tx){const rows=savedTransactions().filter(t=>t.hash!==tx.hash);localStorage.setItem(STORAGE_KEY,JSON.stringify([tx,...rows].slice(0,50)));window.dispatchEvent(new Event('vantage-transactions'));}
 const sdkNames={studionet:'studionet',testnet_bradbury:'testnetBradbury',localnet:'localnet'};
 export function useTransactions(){
-  const {wallets}=useWallets();const {getAccessToken,login,authenticated}=usePrivy();const cache=useQueryClient();
+  const {wallets,getAccessToken,login,authenticated,available}=useAuth();const cache=useQueryClient();
   const [busy,setBusy]=useState(false),[message,setMessage]=useState(null),[error,setError]=useState(null);
   async function clientFor(config){
+    if(!available)throw new Error('Wallet signing awaits Privy configuration.');
     if(!authenticated){login();throw new Error('Connect your wallet to sign this action.');}
     const wallet=wallets[0];if(!wallet)throw new Error('No signing wallet is available.');
     await wallet.switchChain(config.chainId);

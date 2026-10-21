@@ -1,0 +1,2 @@
+import {defineConfig,devices} from '@playwright/test';
+export default defineConfig({testDir:'tests/browser',fullyParallel:true,expect:{timeout:15000},use:{baseURL:'http://127.0.0.1:5183',trace:'retain-on-failure'},webServer:{command:'npm --prefix frontend run dev -- --host 127.0.0.1 --port 5183',url:'http://127.0.0.1:5183',reuseExistingServer:!process.env.CI},projects:[{name:'desktop',use:{...devices['Desktop Chrome']}},{name:'mobile',use:{...devices['iPhone 13'],defaultBrowserType:'chromium'}}]});
