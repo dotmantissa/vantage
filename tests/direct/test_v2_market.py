@@ -27,7 +27,7 @@ def market(direct_deploy,direct_vm):
             return {'ok':None}
     direct_vm._gl_call_hook=hook
     direct_vm.mock_web('.*api.github.com.*',{'status':200,'body':'A public release exists and is available. record=release-1'})
-    direct_vm.mock_llm('.*Review a prediction market.*',json.dumps({'resolvable':True,'issues':[],'relevant_precedents':[],'summary':'Specific public delivery criteria.'}))
+    direct_vm.mock_llm('.*Review a prediction market.*',json.dumps({'resolvable':True,'checks':{k:True for k in ['observable_criteria','coherent_outcomes','historical_source_suitable','explicit_observation']},'issues':[],'relevant_precedents':[],'summary':'Specific public delivery criteria.'}))
     contract=direct_deploy(PATH,charter_address=ADDR,memory_address=ADDR)
     return contract
 

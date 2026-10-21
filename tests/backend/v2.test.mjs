@@ -10,6 +10,10 @@ test('accepted execution errors are never reported as successful',()=>{
   assert.equal(outcome({status:'ACCEPTED',consensus_data:{leader_receipt:[{execution_result:'VM_ERROR'}]}},'hash','studionet').successful,false);
   assert.equal(outcome({status:'FINALIZED',consensus_data:{leader_receipt:[{execution_result:'SUCCESS'}]}},'hash','studionet').successful,true);
 });
+test('a finalized rejected consensus never reports leader success as applied state',()=>{
+  assert.equal(outcome({status:'FINALIZED',result:7,consensus_data:{leader_receipt:[{execution_result:'SUCCESS'}]}},'hash','studionet').successful,false);
+  assert.equal(outcome({status:'FINALIZED',result:6,consensus_data:{leader_receipt:[{execution_result:'SUCCESS'}]}},'hash','studionet').successful,true);
+});
 test('evidence bundle keys are content addressed and archival role explicit',()=>{
   const e={id:'m-1:e-1',content_hash:'0x123',observed_at:1};
   const a=evidenceBundle(e),b=evidenceBundle(e);
