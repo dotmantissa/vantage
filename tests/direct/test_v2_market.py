@@ -73,7 +73,7 @@ def evidence_mock(direct_vm, observed, **overrides):
     direct_vm.mock_llm('.*Extract evidence for the LOCKED.*',json.dumps(result))
 
 def test_consensus_checkpoint_preserves_content_and_provenance(market,direct_vm):
-    m=activate(market,direct_vm);evidence_mock(direct_vm,int(time.time()))
+    m=activate(market,direct_vm);evidence_mock(direct_vm,m['created_at'])
     e=json.loads(market.record_evidence(m['market_id'],0))
     assert e['historical_verified']
     assert e['content_hash'].startswith('0x')
@@ -82,7 +82,7 @@ def test_consensus_checkpoint_preserves_content_and_provenance(market,direct_vm)
 
 def test_missing_history_and_incomplete_negatives_are_insufficient(market,direct_vm):
     m=activate(market,direct_vm)
-    evidence_mock(direct_vm,int(time.time()),historical_verified=False)
+    evidence_mock(direct_vm,m['created_at'],historical_verified=False)
     e=json.loads(market.record_evidence(m['market_id'],0))
     assert all(c['decision']=='INSUFFICIENT' for c in e['criteria'])
 
@@ -226,7 +226,7 @@ def test_draft_recovery_is_author_scoped_and_paginated(market,direct_vm,direct_b
 
 def test_incomplete_criterion_keeps_independent_support(market,direct_vm):
     m=activate(market,direct_vm)
-    evidence_mock(direct_vm,int(time.time()),criteria=[{'id':'released','decision':'MET','citation':'A public release exists'},{'id':'available','decision':'INSUFFICIENT','citation':''}])
+    evidence_mock(direct_vm,m['created_at'],criteria=[{'id':'released','decision':'MET','citation':'A public release exists'},{'id':'available','decision':'INSUFFICIENT','citation':''}])
     market.record_evidence(m['market_id'],0)
     warp_past_close(m,direct_vm);market.close_market(m['market_id'])
     market.resolve(m['market_id'])
@@ -239,7 +239,7 @@ def test_numeric_value_is_decided_deterministically_without_llm_label(market,dir
     p=proposal();p.update(kind='numeric',outcomes=['Yes','No'],comparator='gte',threshold='42.125',units='units')
     d=json.loads(market.compile_draft(json.dumps(p)));direct_vm.value=10500
     m=json.loads(market.activate_draft(d['id'],d['spec_hash'],'10000'));direct_vm.value=0
-    evidence_mock(direct_vm,int(time.time()),numeric_value='42.125',criteria=[{'id':'released','decision':'INSUFFICIENT','citation':''},{'id':'available','decision':'INSUFFICIENT','citation':''}])
+    evidence_mock(direct_vm,m['created_at'],numeric_value='42.125',criteria=[{'id':'released','decision':'INSUFFICIENT','citation':''},{'id':'available','decision':'INSUFFICIENT','citation':''}])
     market.record_evidence(m['market_id'],0);warp_past_close(m,direct_vm);market.close_market(m['market_id'])
     result=json.loads(market.resolve(m['market_id']))
     assert result['winning_outcome']==0
@@ -250,7 +250,7 @@ def test_invalid_numeric_sign_rejected(market):
         market.compile_draft(json.dumps(p))
 
 def test_predeadline_spam_cannot_exhaust_observation_budget(market,direct_vm):
-    m=activate(market,direct_vm);evidence_mock(direct_vm,int(time.time()))
+    m=activate(market,direct_vm);evidence_mock(direct_vm,m['created_at'])
     for _ in range(CHARTER['max_evidence']//2):
         market.record_evidence(m['market_id'],0)
     with pytest.raises(Exception,match='reserved'):
