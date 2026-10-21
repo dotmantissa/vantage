@@ -210,6 +210,198 @@
       "successful": false,
       "finalized": false,
       "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9"
+    },
+    {
+      "method": "compile_draft",
+      "hash": "0x74952c7ee3e1482361c22badbc6642b67f12a4996a7a1fcb503a607301c22ab0",
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9",
+      "market_id": "m-3",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true
+    },
+    {
+      "method": "activate_draft",
+      "hash": "0x35a2f7b84888218f763090a87c1eebdce287eb97378a24b5751a89e897fb6464",
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9",
+      "market_id": "m-3",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true
+    },
+    {
+      "method": "record_evidence",
+      "hash": "0x1dab1abe048d3c8f252ad73d95736ce426f4fb5de4cf817eecede0dcd4d13684",
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9",
+      "market_id": "m-3",
+      "network": "studionet",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "appeal": {
+        "available": false,
+        "eligible": false,
+        "charge_wei": null
+      }
+    },
+    {
+      "method": "close_market",
+      "hash": "0xe448a6cdfd968d774e8689ebd50dfe9384e80de6f8dcbe4ecb44845948f3672f",
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9",
+      "market_id": "m-3",
+      "network": "studionet",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "appeal": {
+        "available": false,
+        "eligible": false,
+        "charge_wei": null
+      }
+    },
+    {
+      "method": "resolve",
+      "hash": "0xa22ec2812af62bff868bbfb4dd7992f31c35faac416057ebe4e41cc696198530",
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9",
+      "market_id": "m-3",
+      "network": "studionet",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "appeal": {
+        "available": false,
+        "eligible": false,
+        "charge_wei": null
+      }
+    },
+    {
+      "method": "challenge",
+      "hash": "0xd00ebff392364a3f8afa082e54db4711c7cbbf7258a9e4d87e4e43509caa4a0a",
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9",
+      "market_id": "m-3",
+      "network": "studionet",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "appeal": {
+        "available": false,
+        "eligible": false,
+        "charge_wei": null
+      }
+    },
+    {
+      "method": "resolve",
+      "hash": "0x5df438e4ad7c1c8a053fba8323ef21d66147d13928f6a7747ec6056512276801",
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9",
+      "market_id": "m-3",
+      "network": "studionet",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "appeal": {
+        "available": false,
+        "eligible": false,
+        "charge_wei": null
+      }
+    },
+    {
+      "method": "appeal",
+      "hash": "0x6677bf2017d5b6cf9741492d2972c642bbe3eda145bede9672d452d1aabb55c8",
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9",
+      "market_id": "m-3",
+      "network": "studionet",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "appeal": {
+        "available": false,
+        "eligible": false,
+        "charge_wei": null
+      }
+    },
+    {
+      "method": "resolve",
+      "hash": "0x889c508c97cc0992c0f568e6d0bc2813bab683aabc93868c5840e7eb0ae8bcaa",
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9",
+      "market_id": "m-3",
+      "network": "studionet",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "appeal": {
+        "available": false,
+        "eligible": false,
+        "charge_wei": null
+      }
+    },
+    {
+      "method": "finalize",
+      "hash": "0xa6e5b3ffeff978fd4a6ae7af1ade9f44faa888da3d3f9b90a3d9a4c4082d1d01",
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9",
+      "market_id": "m-3",
+      "network": "studionet",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "appeal": {
+        "available": false,
+        "eligible": false,
+        "charge_wei": null
+      }
+    },
+    {
+      "method": "settle",
+      "hash": "0x7a58823a4ff03e0d133d5e4eb78e947436214cb50035d485cd9fab79274f5b44",
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9",
+      "market_id": "m-3",
+      "network": "studionet",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "appeal": {
+        "available": false,
+        "eligible": false,
+        "charge_wei": null
+      }
+    },
+    {
+      "method": "claim",
+      "hash": "0xadab8d80337b08b4f532fc687039ce046616973e944a3ccfdf6d9aac5def6c4e",
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9",
+      "market_id": "m-3",
+      "network": "studionet",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "appeal": {
+        "available": false,
+        "eligible": false,
+        "charge_wei": null
+      }
     }
   ],
   "deploy_hash": "0x1db871dac8d1b7973c5f16cdc191cf85798a8cc914a81a827a1d23da51b0d7d9",
@@ -261,9 +453,11 @@
     "active_charter": "v2.1",
     "withdrawal_finalized": true,
     "withdrawal_credit_wei": "1001000000000000000",
-    "disputes": "30s lifecycle dispute window elapsed; 180s draft cancelled behind stalled network queue; application disputes remain unverified",
+    "disputes": "Actual production UI application challenge, evidence appeal, re-evaluation, finalization, settlement and claim finalized successfully with majority agreement.",
     "archive": "Retrieved production consensus JSON, HTTP200, SHA256matches",
-    "semantic_retrieval": "Operational Memory search returned finalizedm-1 after actual embeddings"
+    "semantic_retrieval": "Operational Memory search returned finalizedm-1 after actual embeddings",
+    "dispute_withdrawal": "No broadcast: hourly RPC quota. 1001700000000000000 wei remains credited.",
+    "dispute_precedent": "Production Memory contains m-3 after settlement finality."
   },
   "withdraw_after": {
     "wallet": "0x2e17351bea1bfecf79",
@@ -326,27 +520,331 @@
       "finalized": false
     },
     "standard_restored": true,
-    "blocked_evidence": {
+    "extra_cleanup_error": "StudioNet cancellation request returned hourly rate limit; verify transaction status before retry",
+    "queue_recovered": {
       "hash": "0x8b9aea409e723907ed3da1d4491c17a2f5c735154857518435f1c86c18e9c8ea",
-      "status": "COMMITTING",
-      "last_monitoring": 1792599879.3184195
+      "network": "studionet",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true
     },
-    "extra_checkpoints": [
+    "extra_results": [
       {
         "hash": "0x6c4dd0ab4ccdbbf53a0f3643aa54346d369a35d2fbecfe9c52d4dc3383ef6c0c",
-        "status": "PROPOSING"
+        "network": "studionet",
+        "status": "FINALIZED",
+        "execution": "SUCCESS",
+        "consensus": "MAJORITY_DISAGREE",
+        "successful": false,
+        "finalized": true
+      },
+      {
+        "hash": "0x397ead6714400275b59dd50c2ab22551bfa08a235d8b6179d41d359fc2013e8d",
+        "network": "studionet",
+        "status": "FINALIZED",
+        "execution": "SUCCESS",
+        "consensus": "MAJORITY_DISAGREE",
+        "successful": false,
+        "finalized": true
       }
     ],
-    "extra_cleanup_error": "StudioNet cancellation request returned hourly rate limit; verify transaction status before retry"
+    "retry_select_hash": "0x3a434d2e76f203f8c3dc94fbac766f33b2c9f500676dbf4dacc5a724ab257e0e",
+    "retry_compile": {
+      "method": "compile_draft",
+      "hash": "0x74952c7ee3e1482361c22badbc6642b67f12a4996a7a1fcb503a607301c22ab0"
+    },
+    "retry_close": "2026-10-21T18:28",
+    "retry_restore_hash": "0x51bea6820e704ab6ef23a83c9bbc70d7253ddce8f57822e1e102b60c5b207635",
+    "draft_id": "d-3",
+    "spec_hash": "0x5717a8d3121256dd5403fcdf98297a516b6edda7bca91540cabd7e9d0ae77191",
+    "close_time": 1792603680,
+    "activation": {
+      "method": "activate_draft",
+      "hash": "0x35a2f7b84888218f763090a87c1eebdce287eb97378a24b5751a89e897fb6464"
+    },
+    "market_id": "m-3",
+    "evidence": {
+      "method": "record_evidence",
+      "hash": "0x1dab1abe048d3c8f252ad73d95736ce426f4fb5de4cf817eecede0dcd4d13684"
+    },
+    "evidence_status": {
+      "hash": "0x1dab1abe048d3c8f252ad73d95736ce426f4fb5de4cf817eecede0dcd4d13684",
+      "network": "studionet",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "appeal": {
+        "available": false,
+        "eligible": false,
+        "charge_wei": null
+      }
+    },
+    "watchlist_verified": true,
+    "polish_verified": {
+      "archive_href": "/api/v2/archives/eed8e9de0868e9c95a1089c66a04df2868e4a87adecbe1c5e1c4a9ce9d517548",
+      "first_trade_chart": true,
+      "chart_dots": 2,
+      "errors": []
+    },
+    "close": {
+      "method": "close_market",
+      "hash": "0xe448a6cdfd968d774e8689ebd50dfe9384e80de6f8dcbe4ecb44845948f3672f"
+    },
+    "resolve": {
+      "method": "resolve",
+      "hash": "0xa22ec2812af62bff868bbfb4dd7992f31c35faac416057ebe4e41cc696198530"
+    },
+    "challenge": {
+      "method": "challenge",
+      "hash": "0xd00ebff392364a3f8afa082e54db4711c7cbbf7258a9e4d87e4e43509caa4a0a"
+    },
+    "challenge_resolve": {
+      "method": "resolve",
+      "hash": "0x5df438e4ad7c1c8a053fba8323ef21d66147d13928f6a7747ec6056512276801"
+    },
+    "challenge_state": {
+      "state": "PROVISIONAL",
+      "challenge_round": 1,
+      "resolution_revision": 2,
+      "contest": {
+        "actor": "0xbc1399c55538ec034d4da550c03c34ae0c357f53",
+        "bond_wei": "1000000000000000",
+        "evidence_id": "m-3:e-1",
+        "resolved": true,
+        "upheld": false
+      },
+      "challenge_deadline": 1792604371,
+      "appeal_deadline": 1792604551
+    },
+    "appeal": {
+      "method": "appeal",
+      "hash": "0x6677bf2017d5b6cf9741492d2972c642bbe3eda145bede9672d452d1aabb55c8"
+    },
+    "appeal_resolve": {
+      "method": "resolve",
+      "hash": "0x889c508c97cc0992c0f568e6d0bc2813bab683aabc93868c5840e7eb0ae8bcaa"
+    },
+    "appeal_state": {
+      "state": "PROVISIONAL",
+      "appeal_round": 1,
+      "resolution_revision": 3,
+      "contest": {
+        "actor": "0xbc1399c55538ec034d4da550c03c34ae0c357f53",
+        "bond_wei": "1000000000000000",
+        "resolved": true,
+        "upheld": false
+      },
+      "challenge_deadline": 1792604582,
+      "appeal_deadline": 1792604762
+    },
+    "final_results": {
+      "close": {
+        "hash": "0xe448a6cdfd968d774e8689ebd50dfe9384e80de6f8dcbe4ecb44845948f3672f",
+        "network": "studionet",
+        "status": "FINALIZED",
+        "execution": "SUCCESS",
+        "consensus": "MAJORITY_AGREE",
+        "successful": true,
+        "finalized": true,
+        "appeal": {
+          "available": false,
+          "eligible": false,
+          "charge_wei": null
+        }
+      },
+      "resolve": {
+        "hash": "0xa22ec2812af62bff868bbfb4dd7992f31c35faac416057ebe4e41cc696198530",
+        "network": "studionet",
+        "status": "FINALIZED",
+        "execution": "SUCCESS",
+        "consensus": "MAJORITY_AGREE",
+        "successful": true,
+        "finalized": true,
+        "appeal": {
+          "available": false,
+          "eligible": false,
+          "charge_wei": null
+        }
+      },
+      "challenge": {
+        "hash": "0xd00ebff392364a3f8afa082e54db4711c7cbbf7258a9e4d87e4e43509caa4a0a",
+        "network": "studionet",
+        "status": "FINALIZED",
+        "execution": "SUCCESS",
+        "consensus": "MAJORITY_AGREE",
+        "successful": true,
+        "finalized": true,
+        "appeal": {
+          "available": false,
+          "eligible": false,
+          "charge_wei": null
+        }
+      },
+      "challenge_resolve": {
+        "hash": "0x5df438e4ad7c1c8a053fba8323ef21d66147d13928f6a7747ec6056512276801",
+        "network": "studionet",
+        "status": "FINALIZED",
+        "execution": "SUCCESS",
+        "consensus": "MAJORITY_AGREE",
+        "successful": true,
+        "finalized": true,
+        "appeal": {
+          "available": false,
+          "eligible": false,
+          "charge_wei": null
+        }
+      },
+      "appeal": {
+        "hash": "0x6677bf2017d5b6cf9741492d2972c642bbe3eda145bede9672d452d1aabb55c8",
+        "network": "studionet",
+        "status": "FINALIZED",
+        "execution": "SUCCESS",
+        "consensus": "MAJORITY_AGREE",
+        "successful": true,
+        "finalized": true,
+        "appeal": {
+          "available": false,
+          "eligible": false,
+          "charge_wei": null
+        }
+      },
+      "appeal_resolve": {
+        "hash": "0x889c508c97cc0992c0f568e6d0bc2813bab683aabc93868c5840e7eb0ae8bcaa",
+        "network": "studionet",
+        "status": "FINALIZED",
+        "execution": "SUCCESS",
+        "consensus": "MAJORITY_AGREE",
+        "successful": true,
+        "finalized": true,
+        "appeal": {
+          "available": false,
+          "eligible": false,
+          "charge_wei": null
+        }
+      },
+      "finalize": {
+        "hash": "0xa6e5b3ffeff978fd4a6ae7af1ade9f44faa888da3d3f9b90a3d9a4c4082d1d01",
+        "network": "studionet",
+        "status": "FINALIZED",
+        "execution": "SUCCESS",
+        "consensus": "MAJORITY_AGREE",
+        "successful": true,
+        "finalized": true,
+        "appeal": {
+          "available": false,
+          "eligible": false,
+          "charge_wei": null
+        }
+      },
+      "settle": {
+        "hash": "0x7a58823a4ff03e0d133d5e4eb78e947436214cb50035d485cd9fab79274f5b44",
+        "network": "studionet",
+        "status": "FINALIZED",
+        "execution": "SUCCESS",
+        "consensus": "MAJORITY_AGREE",
+        "successful": true,
+        "finalized": true,
+        "appeal": {
+          "available": false,
+          "eligible": false,
+          "charge_wei": null
+        }
+      },
+      "claim": {
+        "hash": "0xadab8d80337b08b4f532fc687039ce046616973e944a3ccfdf6d9aac5def6c4e",
+        "network": "studionet",
+        "status": "FINALIZED",
+        "execution": "SUCCESS",
+        "consensus": "MAJORITY_AGREE",
+        "successful": true,
+        "finalized": true,
+        "appeal": {
+          "available": false,
+          "eligible": false,
+          "charge_wei": null
+        }
+      }
+    },
+    "finalize": {
+      "method": "finalize",
+      "hash": "0xa6e5b3ffeff978fd4a6ae7af1ade9f44faa888da3d3f9b90a3d9a4c4082d1d01"
+    },
+    "settle": {
+      "method": "settle",
+      "hash": "0x7a58823a4ff03e0d133d5e4eb78e947436214cb50035d485cd9fab79274f5b44"
+    },
+    "claim_before": {
+      "claimable_wei": "1000000000000000000",
+      "claimed": false,
+      "lp_shares": "1000000000000000000",
+      "shares": [
+        "0",
+        "0"
+      ]
+    },
+    "claim": {
+      "method": "claim",
+      "hash": "0xadab8d80337b08b4f532fc687039ce046616973e944a3ccfdf6d9aac5def6c4e"
+    },
+    "withdraw_before": {
+      "credit": "1001700000000000000",
+      "contract": "0x7073a39186fd8000"
+    },
+    "retry_status": "Settled and claimed through production UI; final withdrawal was blocked before broadcast by StudioNet hourly RPC quota. Testing stopped at user request.",
+    "withdrawal": {
+      "status": "NOT_SUBMITTED",
+      "reason": "StudioNet 500 requests/hour RPC limit during wallet submission; saved transactions confirm no new withdrawal hash",
+      "credit_wei": "1001700000000000000",
+      "safe_next_action": "Withdraw credit from Portfolio after the RPC quota resets; inspect saved hashes first."
+    },
+    "final_state": {
+      "state": "SETTLED",
+      "winning_outcome": 0,
+      "challenge_round": 1,
+      "appeal_round": 1,
+      "resolution_revision": 3,
+      "claimed": true,
+      "claimable_wei": "0",
+      "evidence": "Finalized settlement and claim receipts; actual Portfolio displayed settled/claimed."
+    },
+    "bond_outcomes": {
+      "challenge": {
+        "upheld": false,
+        "forfeited_wei": "1000000000000000"
+      },
+      "evidence_appeal": {
+        "upheld": false,
+        "forfeited_wei": "1000000000000000"
+      },
+      "author_bond_released": true
+    },
+    "archives": [
+      {
+        "key": "consensus/0707cb8ba522019775556c32ba4a75cc14d928d4514b5968eb555ab6498818fc.json",
+        "status": 200,
+        "bytes": 711,
+        "hashMatches": true
+      }
+    ],
+    "precedent": {
+      "memory": "0x573177cC5Cdd92d7048e141cB3F40efbd171b20b",
+      "id": "m-3",
+      "total": 2,
+      "delivery": "Observed in production Memory after finalized settlement; records m-1 and m-3."
+    }
   },
   "hosting": {
-    "deployment_id": "dpl_CSLtNqBJgjk1yEdnw2XkHtsJc3W4",
-    "deployment_url": "https://vantage-protocol-1d03qelqt-mantissas-projects.vercel.app",
-    "code_commit": "5017ee0",
+    "deployment_id": "dpl_GHh34bTmnnHA3Qe48jfgALYZxGds",
+    "deployment_url": "https://vantage-protocol-bdp7md53k-mantissas-projects.vercel.app",
+    "code_commit": "c550434",
     "alias": "https://vantage-genlayer.vercel.app",
-    "state": "READY; requested alias assigned and live UI/API verified",
+    "state": "READY; requested alias assigned",
     "browser_errors": 0,
-    "queue_notice_visible": true,
+    "queue_notice_visible": "Intermittent during real network consensus; no unresolved broadcasts at last recorded healthy snapshot.",
     "mobile_overflow": false,
     "mobile_browser_errors": 0
   },
@@ -354,87 +852,229 @@
     "direct_contract_tests": 171,
     "controlled_five_validator_tests": 2,
     "backend_tests": 33,
-    "browser_cases": 6,
+    "browser_cases": 8,
     "lint": "passed",
     "build": "passed",
     "prior_full_ci": "https://github.com/dotmantissa/vantage/actions/runs/39634775988",
-    "full_ci": "https://github.com/dotmantissa/vantage/actions/runs/39637681783"
+    "full_ci": "https://github.com/dotmantissa/vantage/actions/runs/39643490968",
+    "test_fixture_commit": "08a3273"
   },
   "services": {
-    "status": "degraded",
+    "status": "ok",
     "configured": true,
     "jobs": [
       {
         "state": "pending",
-        "count": 3
+        "count": 1
       },
       {
         "state": "done",
-        "count": 41
+        "count": 56
       }
     ],
     "failures": [
       {
-        "id": "50",
-        "kind": "track",
+        "id": "65",
+        "kind": "evidence",
         "state": "pending",
-        "last_error": "Waiting for network consensus: 0x8b9aea409e723907ed3da1d4491c17a2f5c735154857518435f1c86c18e9c8ea (COMMITTING)",
-        "updated_at": "2026-10-21T16:54:02.174Z"
-      },
-      {
-        "id": "55",
-        "kind": "track",
-        "state": "pending",
-        "last_error": "Waiting for network consensus: 0x6c4dd0ab4ccdbbf53a0f3643aa54346d369a35d2fbecfe9c52d4dc3383ef6c0c (COMMITTING)",
-        "updated_at": "2026-10-21T16:54:01.914Z"
-      },
-      {
-        "id": "58",
-        "kind": "track",
-        "state": "pending",
-        "last_error": "Waiting for network consensus: 0x397ead6714400275b59dd50c2ab22551bfa08a235d8b6179d41d359fc2013e8d (PENDING)",
-        "updated_at": "2026-10-21T16:54:01.591Z"
+        "last_error": "Waiting for contract queue: 0xe448a6cdfd968d774e8689ebd50dfe9384e80de6f8dcbe4ecb44845948f3672f (PENDING)",
+        "updated_at": "2026-10-21T17:39:19.003Z"
       }
     ],
-    "pending_transactions": [
-      {
-        "tx_hash": "0x397ead6714400275b59dd50c2ab22551bfa08a235d8b6179d41d359fc2013e8d",
-        "method": "record_evidence",
-        "status": "PENDING",
-        "updated_at": "2026-10-21T16:54:01.575Z"
-      },
-      {
-        "tx_hash": "0x6c4dd0ab4ccdbbf53a0f3643aa54346d369a35d2fbecfe9c52d4dc3383ef6c0c",
-        "method": "record_evidence",
-        "status": "COMMITTING",
-        "updated_at": "2026-10-21T16:54:01.895Z"
-      },
-      {
-        "tx_hash": "0x8b9aea409e723907ed3da1d4491c17a2f5c735154857518435f1c86c18e9c8ea",
-        "method": "record_evidence",
-        "status": "COMMITTING",
-        "updated_at": "2026-10-21T16:54:02.156Z"
-      }
-    ],
-    "last_index": "2026-10-21T16:53:54.716Z",
+    "pending_transactions": [],
+    "last_index": "2026-10-21T17:41:34.876Z",
     "archive_configured": true,
     "archive_backend": "postgres",
     "keeper_configured": true,
     "last_worker": {
-      "started_at": "2026-10-21T16:53:49.474Z",
-      "finished_at": "2026-10-21T16:54:02.206Z",
+      "started_at": "2026-10-21T17:41:28.258Z",
+      "finished_at": "2026-10-21T17:41:41.567Z",
       "body": {
         "index": {
-          "markets": 2,
+          "markets": 3,
           "configured": true
         },
         "failed": 0,
-        "waiting": 3,
-        "processed": 0,
+        "waiting": 0,
+        "processed": 3,
         "configured": true
       }
     },
-    "observed_at": "2026-10-21T16:54:02Z",
-    "status_explanation": "Three existing evidence broadcasts await StudioNet consensus. New automated writes are paused; indexing/archive remain configured."
-  }
+    "observed_at": "2026-10-21T17:44:28Z",
+    "snapshot_note": "Health was ok with no unresolved broadcasts at this observation. Later StudioNet hourly quota blocked the final manual withdrawal before submission."
+  },
+  "services_recovery": {
+    "queue_recovered": true,
+    "checkpoints_finalized": [
+      {
+        "hash": "0x6c4dd0ab4ccdbbf53a0f3643aa54346d369a35d2fbecfe9c52d4dc3383ef6c0c",
+        "network": "studionet",
+        "status": "FINALIZED",
+        "execution": "SUCCESS",
+        "consensus": "MAJORITY_DISAGREE",
+        "successful": false,
+        "finalized": true
+      },
+      {
+        "hash": "0x397ead6714400275b59dd50c2ab22551bfa08a235d8b6179d41d359fc2013e8d",
+        "network": "studionet",
+        "status": "FINALIZED",
+        "execution": "SUCCESS",
+        "consensus": "MAJORITY_DISAGREE",
+        "successful": false,
+        "finalized": true
+      }
+    ],
+    "health_snapshot": {
+      "status": "ok",
+      "configured": true,
+      "jobs": [
+        {
+          "state": "pending",
+          "count": 1
+        },
+        {
+          "state": "done",
+          "count": 50
+        }
+      ],
+      "failures": [],
+      "pending_transactions": [],
+      "last_index": "2026-10-21T17:21:38.480Z",
+      "archive_configured": true,
+      "archive_backend": "postgres",
+      "keeper_configured": true,
+      "last_worker": {
+        "started_at": "2026-10-21T17:21:31.788Z",
+        "finished_at": "2026-10-21T17:21:47.245Z",
+        "body": {
+          "error": "An unknown RPC error occurred.\n\nDetails: Rate limit exceeded: 30 requests per minute\nVersion: viem@2.56.9",
+          "index": {
+            "markets": 3,
+            "configured": true
+          },
+          "failed": 0,
+          "waiting": 0,
+          "processed": 0,
+          "configured": true
+        }
+      }
+    }
+  },
+  "services_history": {
+    "earlier_queue_snapshot": {
+      "status": "degraded",
+      "configured": true,
+      "jobs": [
+        {
+          "state": "pending",
+          "count": 3
+        },
+        {
+          "state": "done",
+          "count": 41
+        }
+      ],
+      "failures": [
+        {
+          "id": "50",
+          "kind": "track",
+          "state": "pending",
+          "last_error": "Waiting for network consensus: 0x8b9aea409e723907ed3da1d4491c17a2f5c735154857518435f1c86c18e9c8ea (COMMITTING)",
+          "updated_at": "2026-10-21T16:54:02.174Z"
+        },
+        {
+          "id": "55",
+          "kind": "track",
+          "state": "pending",
+          "last_error": "Waiting for network consensus: 0x6c4dd0ab4ccdbbf53a0f3643aa54346d369a35d2fbecfe9c52d4dc3383ef6c0c (COMMITTING)",
+          "updated_at": "2026-10-21T16:54:01.914Z"
+        },
+        {
+          "id": "58",
+          "kind": "track",
+          "state": "pending",
+          "last_error": "Waiting for network consensus: 0x397ead6714400275b59dd50c2ab22551bfa08a235d8b6179d41d359fc2013e8d (PENDING)",
+          "updated_at": "2026-10-21T16:54:01.591Z"
+        }
+      ],
+      "pending_transactions": [
+        {
+          "tx_hash": "0x397ead6714400275b59dd50c2ab22551bfa08a235d8b6179d41d359fc2013e8d",
+          "method": "record_evidence",
+          "status": "PENDING",
+          "updated_at": "2026-10-21T16:54:01.575Z"
+        },
+        {
+          "tx_hash": "0x6c4dd0ab4ccdbbf53a0f3643aa54346d369a35d2fbecfe9c52d4dc3383ef6c0c",
+          "method": "record_evidence",
+          "status": "COMMITTING",
+          "updated_at": "2026-10-21T16:54:01.895Z"
+        },
+        {
+          "tx_hash": "0x8b9aea409e723907ed3da1d4491c17a2f5c735154857518435f1c86c18e9c8ea",
+          "method": "record_evidence",
+          "status": "COMMITTING",
+          "updated_at": "2026-10-21T16:54:02.156Z"
+        }
+      ],
+      "last_index": "2026-10-21T16:53:54.716Z",
+      "archive_configured": true,
+      "archive_backend": "postgres",
+      "keeper_configured": true,
+      "last_worker": {
+        "started_at": "2026-10-21T16:53:49.474Z",
+        "finished_at": "2026-10-21T16:54:02.206Z",
+        "body": {
+          "index": {
+            "markets": 2,
+            "configured": true
+          },
+          "failed": 0,
+          "waiting": 3,
+          "processed": 0,
+          "configured": true
+        }
+      },
+      "observed_at": "2026-10-21T16:54:02Z",
+      "status_explanation": "Three existing evidence broadcasts await StudioNet consensus. New automated writes are paused; indexing/archive remain configured."
+    },
+    "recovery_snapshot": {
+      "status": "ok",
+      "configured": true,
+      "jobs": [
+        {
+          "state": "pending",
+          "count": 1
+        },
+        {
+          "state": "done",
+          "count": 50
+        }
+      ],
+      "failures": [],
+      "pending_transactions": [],
+      "last_index": "2026-10-21T17:21:38.480Z",
+      "archive_configured": true,
+      "archive_backend": "postgres",
+      "keeper_configured": true,
+      "last_worker": {
+        "started_at": "2026-10-21T17:21:31.788Z",
+        "finished_at": "2026-10-21T17:21:47.245Z",
+        "body": {
+          "error": "An unknown RPC error occurred.\n\nDetails: Rate limit exceeded: 30 requests per minute\nVersion: viem@2.56.9",
+          "index": {
+            "markets": 3,
+            "configured": true
+          },
+          "failed": 0,
+          "waiting": 0,
+          "processed": 0,
+          "configured": true
+        }
+      }
+    }
+  },
+  "wrapped_at": "2026-10-21T17:51:00Z",
+  "testing_stopped": "User requested wrap-up; no additional testing performed."
 }
