@@ -1,6 +1,6 @@
 {
   "name": "vantage",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
   "private": true,
   "description": "A prediction market built around resolution, settled by GenLayer Intelligent Contract consensus.",
@@ -8,13 +8,16 @@
     "dev:backend": "node backend/src/server.js",
     "dev:frontend": "npm --prefix frontend run dev",
     "dev": "concurrently -n backend,frontend -c green,cyan \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "build": "npm --prefix frontend install && npm --prefix frontend run build",
+    "build": "npm --prefix frontend run build",
     "deploy:contracts": "node deploy/deploy.mjs",
     "lint": "eslint .",
-    "lint:contracts": "genvm-lint check contracts/vantage_charter.py && genvm-lint check contracts/vantage_market.py",
+    "lint:contracts": "node scripts/lint-contracts.mjs",
     "test:contracts": "pytest tests/direct -v",
     "test:integration": "gltest tests/integration -v -s --network studionet",
-    "test": "npm run lint:contracts && npm run test:contracts"
+    "test": "npm run lint:contracts && npm run test:contracts && npm run test:backend",
+    "test:backend": "node --test tests/backend/*.test.mjs",
+    "worker": "node backend/src/v2/worker.js",
+    "deploy:v2": "node deploy/v2.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
@@ -23,8 +26,8 @@
     "dotenv": "^16.4.7",
     "ethers": "^6.13.5",
     "express": "^4.21.2",
-    "genlayer-js": "^1.1.8",
-    "undici": "^8.10.2"
+    "genlayer-js": "1.1.8",
+    "undici": "6.21.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
@@ -33,5 +36,8 @@
     "eslint-plugin-react": "^7.37.4",
     "eslint-plugin-react-hooks": "^5.1.0",
     "globals": "^15.14.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

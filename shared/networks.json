@@ -1,0 +1,31 @@
+{
+  "defaultNetwork": "studionet",
+  "betaNetwork": "testnet_bradbury",
+  "runner": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6",
+  "embeddings": "py-lib-genlayer-embeddings:0bmbm3cyfwxsyh454z53vxqjf47wz2q7smcqp1q4g4a6k2kidnyk",
+  "networks": {
+    "studionet": {
+      "chainId": 61999,
+      "rpcUrl": "https://studio.genlayer.com/api",
+      "explorerUrl": "https://studio.genlayer.com"
+    },
+    "testnet_bradbury": {
+      "chainId": 4221,
+      "rpcUrl": "https://rpc-bradbury.genlayer.com",
+      "explorerUrl": "https://explorer-bradbury.genlayer.com"
+    },
+    "localnet": {
+      "chainId": 61127,
+      "rpcUrl": "http://127.0.0.1:4000/api",
+      "explorerUrl": "http://localhost:8080"
+    }
+  },
+  "deployments": {
+    "v2": {}
+  },
+  "legacy": {
+    "network": "studionet",
+    "charter": "0xBfB34B0b1dCa954823fBbefBAc815c4136d815e0",
+    "market": "0xe143684F1f1fC777d79401C7C26b2123A1c51fe1"
+  }
+}

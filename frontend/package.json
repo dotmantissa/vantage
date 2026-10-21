@@ -1,7 +1,7 @@
 {
   "name": "vantage-frontend",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,10 +11,13 @@
   "dependencies": {
     "@privy-io/react-auth": "^3.45.0",
     "ethers": "^6.13.5",
-    "genlayer-js": "^1.1.8",
+    "genlayer-js": "1.1.8",
     "lucide-react": "^0.475.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-router-dom": "6.30.1",
+    "@tanstack/react-query": "5.90.5",
+    "recharts": "2.15.4"
   },
   "devDependencies": {
     "@types/react": "^18.3.18",
