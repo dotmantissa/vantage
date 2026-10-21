@@ -2,9 +2,19 @@ import fs from 'node:fs';
 import { chains, createClient, createAccount } from 'genlayer-js';
 import {TransactionHashVariant} from 'genlayer-js/types';
 import {cachedRead} from './rpc-cache.js';
+import {AsyncLocalStorage} from 'node:async_hooks';
 import networks from '../../../shared/networks.json' with { type: 'json' };
 const sdkNames = {studionet:'studionet',testnet_bradbury:'testnetBradbury',localnet:'localnet'};
+const deploymentScope=new AsyncLocalStorage();
+export function withDeployment(address,fn) {
+  const config=configuration();
+  if(address===config.contracts.market)return fn();
+  const retained=networks.retainedDeployments?.[config.network]?.find(d=>d.market.toLowerCase()===String(address).toLowerCase());
+  if(!retained)throw Object.assign(new Error('Unknown retained deployment.'),{status:404});
+  return deploymentScope.run({...config,contracts:retained,retained:true},fn);
+}
 export function configuration(env = process.env) {
+  if(env===process.env&&deploymentScope.getStore())return deploymentScope.getStore();
   const network = env.VANTAGE_NETWORK || networks.defaultNetwork;
   if (!sdkNames[network]) throw new Error('Unknown VANTAGE_NETWORK');
   let addresses = networks.deployments.v2[network] || {};

@@ -1,9 +1,12 @@
 export async function api(path, options = {}) {
-  const res = await fetch(`/api/v2${path}`, { ...options, headers: { 'Content-Type': 'application/json', ...options.headers } });
+  const deployment=window.location.pathname.match(/^\/recovery\/(0x[0-9a-fA-F]{40})(?:\/|$)/)?.[1];
+  const scoped=deployment?`${path}${path.includes('?')?'&':'?'}deployment=${deployment}`:path;
+  const res = await fetch(`/api/v2${scoped}`, { ...options, headers: { 'Content-Type': 'application/json', ...options.headers } });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
   return data;
 }
+export function deploymentPath(path){const prefix=window.location.pathname.match(/^\/recovery\/0x[0-9a-fA-F]{40}/)?.[0];return `${prefix||''}${path}`;}
 export function formatGen(value, digits = 2) {
   try { const n = BigInt(value || 0); return `${n / 10n**18n}.${(n % 10n**18n).toString().padStart(18,'0').slice(0,digits)}`; } catch { return '0.00'; }
 }

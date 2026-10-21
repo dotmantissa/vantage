@@ -1,7 +1,7 @@
 import express from 'express';
 import { sql } from '../db.js';
 import { requireAuth } from '../auth.js';
-import { configuration, read, chainClient } from './config.js';
+import { configuration, read, chainClient,withDeployment } from './config.js';
 import { outcome } from './outcome.js';
 import { enqueue } from './jobs.js';
 import { migrateV2 } from './schema.js';
@@ -9,6 +9,7 @@ import {runOnce} from './runner.js';
 import {cronAuthorized} from './cron-auth.js';
 import {cachedRead} from './rpc-cache.js';
 const router=express.Router();
+router.use((req,res,next)=>{try{if(req.query.deployment){if(req.path==='/cron')return res.status(400).json({error:'Keeper runs use the active deployment.'});return withDeployment(String(req.query.deployment),next);}next();}catch(error){res.status(error.status||500).json({error:error.message});}});
 let migration;
 const ready=()=>migration||(migration=migrateV2(sql).catch(error=>{migration=null;throw error;}));
 const route=fn=>async(req,res)=>{try{await fn(req,res);}catch(error){res.status(error.status||500).json({error:error.message});}};

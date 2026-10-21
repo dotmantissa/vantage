@@ -33,5 +33,19 @@
     "network": "studionet",
     "charter": "0xBfB34B0b1dCa954823fBbefBAc815c4136d815e0",
     "market": "0xe143684F1f1fC777d79401C7C26b2123A1c51fe1"
+  },
+  "retainedDeployments": {
+    "studionet": [
+      {
+        "market": "0x55FfEaeB2e41a64824a8E8cB163c1Ea81370B194",
+        "charter": "0x67A7dB60ae87fB27d737f410E30Df0298CB2fb92",
+        "memory": "0x573177cC5Cdd92d7048e141cB3F40efbd171b20b"
+      },
+      {
+        "market": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9",
+        "charter": "0x67A7dB60ae87fB27d737f410E30Df0298CB2fb92",
+        "memory": "0x573177cC5Cdd92d7048e141cB3F40efbd171b20b"
+      }
+    ]
   }
 }
