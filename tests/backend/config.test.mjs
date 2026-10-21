@@ -9,8 +9,11 @@ test('network manifests match pinned SDK chain identities', () => {
     assert.equal(config.networks[name].rpcUrl, chains[sdkName].rpcUrls.default.http[0]);
   }
 });
-test('V2 has no fabricated deployment addresses and V1 remains available', () => {
-  assert.deepEqual(config.deployments.v2, {});
+test('V2 deployments have valid distinct addresses and V1 remains available', () => {
+  for(const contracts of Object.values(config.deployments.v2)){
+    assert.equal(new Set(Object.values(contracts)).size,3);
+    for(const address of Object.values(contracts))assert.match(address,/^0x[0-9a-fA-F]{40}$/);
+  }
   assert.match(config.legacy.market, /^0x[0-9a-fA-F]{40}$/);
   assert.match(config.runner, /^py-genlayer:[a-z0-9]{40,}$/);
 });

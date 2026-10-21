@@ -1,0 +1,40 @@
+{
+  "schema_version": 2,
+  "network": "studionet",
+  "chainId": 61999,
+  "deployer": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+  "contracts": {
+    "charter": "0x67A7dB60ae87fB27d737f410E30Df0298CB2fb92",
+    "memory": "0x573177cC5Cdd92d7048e141cB3F40efbd171b20b",
+    "market": "0x056834eD367024efE563DEf346b5E7d2Bf95b590"
+  },
+  "verified_at": "2026-10-21T13:08:56.285Z",
+  "runner": "pinned in shared/networks.json",
+  "steps": {
+    "charter": {
+      "code_sha256": "b5fc0b7de744768494621350b21543f8d99b17233622f480deb100a19c344e43",
+      "broadcast_state": "submitted",
+      "hash": "0x19e33e82d5130fc01d2a8ecdeb5e493f07b21ad13e683ef446b22a7c30b1f66d",
+      "address": "0x67A7dB60ae87fB27d737f410E30Df0298CB2fb92",
+      "verified": true
+    },
+    "memory": {
+      "code_sha256": "fc197a772a27e9dfef1f65fc37860ed8767b477e2447cc6fb6fc378c648600f7",
+      "broadcast_state": "submitted",
+      "hash": "0xa2f25b076a1a4cb2bf44bf5cc8732c8a89fb162dfc230d36d80c4524556b4660",
+      "address": "0x573177cC5Cdd92d7048e141cB3F40efbd171b20b",
+      "verified": true
+    },
+    "market": {
+      "code_sha256": "6c4a299dd6f3b6d3fa9cbe15e6f6e15bb6aa11f68fb9ce322bb3bdebdec6bba4",
+      "broadcast_state": "submitted",
+      "hash": "0xb7ab723eff9cc503bfe41eb4c478432dcd578db0e4a0c40e67e778036f5e1789",
+      "address": "0x056834eD367024efE563DEf346b5E7d2Bf95b590",
+      "verified": true
+    },
+    "registrar": {
+      "broadcast_state": "submitted",
+      "hash": "0x66c6a403ba2e0c96107934330e0db3fba425b8f9bdadf343715773f985e98cfa"
+    }
+  }
+}

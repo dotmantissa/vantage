@@ -19,7 +19,7 @@ test('evidence bundle keys are content addressed and archival role explicit',()=
 });
 test('unknown chain fails closed and undeployed V2 is explicit',()=>{
   assert.throws(()=>configuration({VANTAGE_NETWORK:'wrong'}),/Unknown/);
-  assert.equal(configuration({}).configured,false);
+  assert.equal(configuration({VANTAGE_NETWORK:'localnet',V2_DEPLOYMENT_FILE:'/tmp/vantage-test-no-manifest.json'}).configured,false);
 });
 test('missing Privy configuration rejects arbitrary bearer tokens',async()=>{
   assert.equal(await verifyPrivyToken('Bearer arbitrary-token'),null);
