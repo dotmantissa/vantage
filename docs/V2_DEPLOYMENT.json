@@ -6,14 +6,14 @@
   "contracts": {
     "charter": "0x67A7dB60ae87fB27d737f410E30Df0298CB2fb92",
     "memory": "0x573177cC5Cdd92d7048e141cB3F40efbd171b20b",
-    "market": "0x55FfEaeB2e41a64824a8E8cB163c1Ea81370B194"
+    "market": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9"
   },
   "market_config": {
     "charter": "0x67A7dB60ae87fB27d737f410E30Df0298CB2fb92",
     "finalized_reads": false,
     "memory": "0x573177cC5Cdd92d7048e141cB3F40efbd171b20b"
   },
-  "verified_at": "2026-10-21T14:09:38.481Z",
+  "verified_at": "2026-10-21T15:34:00Z",
   "runner": "pinned in shared/networks.json",
   "steps": {
     "charter": {
@@ -31,15 +31,34 @@
       "verified": true
     },
     "market": {
-      "code_sha256": "0f6146fcf4c6817e5cf17ee441add159af2a115409e0df8fb8f915337d9a4543",
-      "broadcast_state": "submitted",
-      "hash": "0x7d45a2d77d6329e0fd4ff31744be2e95aba46731b175942c4b861de5c2e8fe1f",
-      "address": "0x55FfEaeB2e41a64824a8E8cB163c1Ea81370B194",
-      "verified": true
+      "code_sha256": "a2497f2c43e2345780c9022aa5cdfa488381e76c9f2fb0dbe78b0c741575c8be",
+      "hash": "0x1db871dac8d1b7973c5f16cdc191cf85798a8cc914a81a827a1d23da51b0d7d9",
+      "address": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9",
+      "verified": true,
+      "broadcast_state": "submitted"
     },
     "registrar": {
-      "broadcast_state": "submitted",
-      "hash": "0xb5e484f89aa3ff1fa772234e5b194ded575b032141f1c6c8e2d7633786bff731"
+      "hash": "0xededaa9386195deb9c57d97dc79a08c75cf0be22c349e3d201a804ddba54f86c",
+      "verified": true,
+      "broadcast_state": "submitted"
     }
-  }
+  },
+  "history": [
+    {
+      "market": "0x55FfEaeB2e41a64824a8E8cB163c1Ea81370B194",
+      "steps": {
+        "market": {
+          "code_sha256": "0f6146fcf4c6817e5cf17ee441add159af2a115409e0df8fb8f915337d9a4543",
+          "broadcast_state": "submitted",
+          "hash": "0x7d45a2d77d6329e0fd4ff31744be2e95aba46731b175942c4b861de5c2e8fe1f",
+          "address": "0x55FfEaeB2e41a64824a8E8cB163c1Ea81370B194",
+          "verified": true
+        },
+        "registrar": {
+          "broadcast_state": "submitted",
+          "hash": "0xb5e484f89aa3ff1fa772234e5b194ded575b032141f1c6c8e2d7633786bff731"
+        }
+      }
+    }
+  ]
 }

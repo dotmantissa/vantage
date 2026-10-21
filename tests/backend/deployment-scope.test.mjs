@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {configuration,withDeployment} from '../../backend/src/v2/config.js';
 test('retained deployment scope is allowlisted and does not leak to concurrent requests',async()=>{
   const active=configuration().contracts.market;
-  const retained='0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9';
+  const retained='0x55FfEaeB2e41a64824a8E8cB163c1Ea81370B194';
   const result=await withDeployment(retained,async()=>{
     await Promise.resolve();return configuration();
   });
