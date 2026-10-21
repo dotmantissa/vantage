@@ -6,14 +6,14 @@
   "contracts": {
     "charter": "0x67A7dB60ae87fB27d737f410E30Df0298CB2fb92",
     "memory": "0x573177cC5Cdd92d7048e141cB3F40efbd171b20b",
-    "market": "0x558f9C2FB4E979333f27883bFE68C0f89a8C6a8d"
+    "market": "0x55FfEaeB2e41a64824a8E8cB163c1Ea81370B194"
   },
   "market_config": {
     "charter": "0x67A7dB60ae87fB27d737f410E30Df0298CB2fb92",
     "finalized_reads": false,
     "memory": "0x573177cC5Cdd92d7048e141cB3F40efbd171b20b"
   },
-  "verified_at": "2026-10-21T13:46:07.502Z",
+  "verified_at": "2026-10-21T14:09:38.481Z",
   "runner": "pinned in shared/networks.json",
   "steps": {
     "charter": {
@@ -31,15 +31,15 @@
       "verified": true
     },
     "market": {
-      "code_sha256": "1d5769477218ef10c1ee57a5e0b91f265d51be49a208a5304a42c5239fd5ce32",
+      "code_sha256": "0f6146fcf4c6817e5cf17ee441add159af2a115409e0df8fb8f915337d9a4543",
       "broadcast_state": "submitted",
-      "hash": "0xfb071b308183e8f0e6bf76eb710ba752bb43cd934320182934f88dae15801a4c",
-      "address": "0x558f9C2FB4E979333f27883bFE68C0f89a8C6a8d",
+      "hash": "0x7d45a2d77d6329e0fd4ff31744be2e95aba46731b175942c4b861de5c2e8fe1f",
+      "address": "0x55FfEaeB2e41a64824a8E8cB163c1Ea81370B194",
       "verified": true
     },
     "registrar": {
       "broadcast_state": "submitted",
-      "hash": "0x7298108368b43c79501eda93663d5a2fc7b008b293c4ae3e511c189a657e1ae4"
+      "hash": "0xb5e484f89aa3ff1fa772234e5b194ded575b032141f1c6c8e2d7633786bff731"
     }
   }
 }
