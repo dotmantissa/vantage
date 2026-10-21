@@ -20,6 +20,7 @@
     "deploy:v2": "node deploy/v2.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.922.0",
     "@neondatabase/serverless": "^1.1.0",
     "@privy-io/server-auth": "^1.18.0",
     "cors": "^2.8.5",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
+    "@playwright/test": "1.56.1",
     "concurrently": "^9.1.2",
     "eslint": "^9.19.0",
     "eslint-plugin-react": "^7.37.4",

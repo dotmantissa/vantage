@@ -10,12 +10,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const DATABASE_URL = process.env.DATABASE_URL;
-if (!DATABASE_URL) {
-  console.error('FATAL: DATABASE_URL is not set in environment.');
-  process.exit(1);
-}
-
-export const sql = neon(DATABASE_URL);
+export const sql = DATABASE_URL ? neon(DATABASE_URL) : () => { throw Object.assign(new Error('Database is not configured.'), { status: 503 }); };
 
 /**
  * Initializes database tables if they do not already exist.

@@ -7,8 +7,10 @@ const PORT = process.env.PORT || 3001;
 // Start server
 async function startServer() {
   try {
-    await initDb();
-    startContinuousSync(180000);
+    if (process.env.DATABASE_URL) {
+      await initDb();
+      startContinuousSync(180000);
+    }
 
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`\n========================================`);

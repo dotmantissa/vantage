@@ -8,6 +8,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import apiRouter from './routes/api.js';
+import v2Router from './v2/routes.js';
 
 dotenv.config();
 
@@ -15,7 +16,7 @@ export const app = express();
 
 // Middleware
 app.use(cors({
-  origin: '*',
+  origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://localhost:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
@@ -23,6 +24,7 @@ app.use(cors({
 app.use(express.json());
 
 // Routes
+app.use('/api/v2', v2Router);
 app.use('/api', apiRouter);
 app.use(apiRouter);
 

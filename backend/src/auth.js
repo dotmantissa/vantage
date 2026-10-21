@@ -10,7 +10,7 @@ let privy = null;
 if (PRIVY_APP_ID && PRIVY_APP_SECRET) {
   privy = new PrivyClient(PRIVY_APP_ID, PRIVY_APP_SECRET);
 } else {
-  console.warn('WARN: Privy credentials not fully set. Auth middleware will operate in permissive mode.');
+  console.warn('WARN: Privy credentials not fully set. Authenticated writes are disabled unless explicit local demo mode is enabled.');
 }
 
 /**
@@ -23,7 +23,7 @@ export async function verifyPrivyToken(authHeader) {
   const token = authHeader.replace('Bearer ', '').trim();
   if (!token) return null;
 
-  if (!privy) {
+  if (!privy && process.env.LOCAL_DEMO_AUTH === '1' && process.env.NODE_ENV !== 'production') {
     // If running in development without secrets, simulate a demo user
     return {
       userId: 'did:privy:demo_user',
@@ -31,6 +31,8 @@ export async function verifyPrivyToken(authHeader) {
       email: 'demo@vantage.market',
     };
   }
+
+  if (!privy) return null;
 
   try {
     const verifiedClaims = await privy.verifyAuthToken(token);
