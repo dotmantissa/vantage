@@ -77,3 +77,104 @@ def test_missing_history_and_incomplete_negatives_are_insufficient(market,direct
     evidence_mock(direct_vm,int(time.time()),historical_verified=False)
     e=json.loads(market.record_evidence(m['market_id'],0))
     assert all(c['decision']=='INSUFFICIENT' for c in e['criteria'])
+
+def warp_past_close(m,direct_vm):
+    direct_vm.warp(time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime(m['spec']['close_time']+1)))
+
+def complete_resolution(market,direct_vm,m):
+    evidence_mock(direct_vm,int(time.time()))
+    market.record_evidence(m['market_id'],0)
+    warp_past_close(m,direct_vm)
+    market.close_market(m['market_id'])
+    result=json.loads(market.resolve(m['market_id']))
+    direct_vm.warp(time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime(result['appeal_deadline']+1)))
+    market.finalize(m['market_id'])
+    return json.loads(market.settle(m['market_id']))
+
+def test_quotes_match_execution_and_conserve_complete_sets(market,direct_vm,direct_bob):
+    m=activate(market,direct_vm);mid=m['market_id']
+    direct_vm.sender=direct_bob
+    quote=json.loads(market.quote_buy(mid,0,'1000'))
+    direct_vm.value=1000
+    trade=json.loads(market.buy(mid,0,quote['shares_out']))
+    assert quote['shares_out']==trade['shares_out']
+    direct_vm.value=0
+    book=json.loads(market.get_market(mid));pos=json.loads(market.get_position(mid,str(direct_bob)))
+    for idx,reserve in enumerate(book['reserves']):
+        assert int(reserve)+int(pos['shares'][idx])==int(book['minted_wei'])
+    sell=json.loads(market.quote_sell(mid,0,trade['shares_out']))
+    result=json.loads(market.sell(mid,0,trade['shares_out'],sell['collateral_out']))
+    assert result['collateral_out']==sell['collateral_out']
+    book=json.loads(market.get_market(mid))
+    assert all(int(r)==int(book['collateral_wei']) for r in book['reserves'])
+
+def test_zero_slippage_minimum_and_overdraw_rejected(market,direct_vm):
+    m=activate(market,direct_vm);direct_vm.value=1000
+    with pytest.raises(Exception,match='minimum'):
+        market.buy(m['market_id'],0,'0')
+    direct_vm.value=0
+    with pytest.raises(Exception,match='Insufficient shares'):
+        market.sell(m['market_id'],0,'1','1')
+
+def test_settlement_is_constant_work_and_claims_idempotent(market,direct_vm,direct_bob,direct_owner):
+    m=activate(market,direct_vm);mid=m['market_id'];owner=str(direct_owner)
+    direct_vm.sender=direct_bob;direct_vm.value=1000
+    q=json.loads(market.quote_buy(mid,0,'1000'));market.buy(mid,0,q['shares_out']);direct_vm.value=0
+    final=complete_resolution(market,direct_vm,m)
+    assert final['state']=='SETTLED'
+    assert final['payout']['paid_wei']=='0'
+    before=int(market.get_balance(str(direct_bob)))
+    claim=json.loads(market.claim(mid))
+    assert int(market.get_balance(str(direct_bob)))==before+int(claim['claimed_wei'])
+    with pytest.raises(Exception,match='Claim unavailable'):
+        market.claim(mid)
+    direct_vm.sender=direct_owner
+    lp=json.loads(market.claim(mid))
+    assert int(lp['claimed_wei'])+int(claim['claimed_wei'])==int(final['payout']['collateral_wei'])
+    market.withdraw()
+    assert market.get_balance(owner)=='0'
+    assert direct_vm.v2_messages[-1]['on']=='finalized'
+
+def test_evidence_failures_wait_and_void_only_after_deadline(market,direct_vm):
+    m=activate(market,direct_vm);warp_past_close(m,direct_vm);market.close_market(m['market_id'])
+    result=json.loads(market.resolve(m['market_id']))
+    assert result['state']=='AWAITING_EVIDENCE'
+    with pytest.raises(Exception,match='deadline not reached'):
+        market.void_expired(m['market_id'])
+    direct_vm.warp(time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime(m['grace_deadline']+1)))
+    result=json.loads(market.void_expired(m['market_id']))
+    assert result['state']=='VOID'
+    assert json.loads(market.claim(m['market_id']))['claimed_wei']=='10000'
+
+def test_partial_delivery_has_deterministic_mapping(market,direct_vm):
+    m=activate(market,direct_vm);warp_past_close(m,direct_vm)
+    observed=m['spec']['observation']['end']
+    evidence_mock(direct_vm,observed,criteria=[{'id':'released','decision':'MET','citation':'A public release exists'},{'id':'available','decision':'UNMET','citation':'is available'}])
+    market.record_evidence(m['market_id'],0)
+    market.close_market(m['market_id'])
+    result=json.loads(market.resolve(m['market_id']))
+    assert result['winning_outcome']==1
+    assert result['state']=='PROVISIONAL'
+
+def test_unsettled_parent_blocks_child_and_void_parent_unwinds(market,direct_vm):
+    parent=activate(market,direct_vm)
+    p=proposal();p['condition']={'market_id':parent['market_id'],'outcome_index':0};p['question']='Will the next release ship if the parent release succeeds?'
+    draft=json.loads(market.compile_draft(json.dumps(p)));direct_vm.value=10500
+    child=json.loads(market.activate_draft(draft['id'],draft['spec_hash'],'10000'));direct_vm.value=0
+    warp_past_close(child,direct_vm);market.close_market(child['market_id'])
+    waiting=json.loads(market.resolve(child['market_id']))
+    assert waiting['reason_code']=='CONDITION_PENDING'
+    direct_vm.warp(time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime(parent['grace_deadline']+1)))
+    market.void_expired(parent['market_id'])
+    result=json.loads(market.resolve(child['market_id']))
+    assert result['state']=='VOID' and result['reason_code']=='CONDITION_UNMET'
+
+def test_liquidity_after_trade_preserves_claim_conservation(market,direct_vm,direct_bob,direct_charlie):
+    m=activate(market,direct_vm);mid=m['market_id']
+    direct_vm.sender=direct_bob;direct_vm.value=1000;market.buy(mid,0,'1');direct_vm.value=0
+    direct_vm.sender=direct_charlie;direct_vm.value=2000;market.add_liquidity(mid);direct_vm.value=0
+    complete_resolution(market,direct_vm,m)
+    for who in [direct_vm.sender,direct_bob]:
+        direct_vm.sender=who;market.claim(mid)
+    book=json.loads(market.get_market(mid))
+    assert int(book['payout']['paid_wei'])<=int(book['payout']['collateral_wei'])
