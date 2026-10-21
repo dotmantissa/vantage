@@ -42,15 +42,26 @@ async function handle(job,config) {
     if(!result.finalized&&!['UNDETERMINED','CANCELED','LEADER_TIMEOUT','VALIDATORS_TIMEOUT'].includes(result.status))throw new Error('Transaction still pending');
     return;
   }
-  if(job.payload.submitted_hash){await enqueue(sql,`track:${job.payload.submitted_hash}`,'track',{hash:job.payload.submitted_hash});return;}
+  if(job.payload.submitted_hash){
+    if(job.payload.actor)await sql`INSERT INTO v2_transactions(network,tx_hash,actor,method,market_id) VALUES(${config.network},${job.payload.submitted_hash},${job.payload.actor},${job.payload.method||'record_evidence'},${job.payload.market_id}) ON CONFLICT DO NOTHING`;
+    await enqueue(sql,`track:${job.payload.submitted_hash}`,'track',{hash:job.payload.submitted_hash});return;
+  }
   if(!process.env.KEEPER_KEY)throw new Error('KEEPER_KEY not configured');
   const client=chainClient(config,process.env.KEEPER_KEY);
   // Recheck current state before mutation; another keeper may already have acted.
   const m=await read('get_market',[job.payload.market_id],'market',config,true);
   if(['SETTLED','VOID'].includes(m.state))return;
   const method=job.kind==='evidence'?'record_evidence':job.payload.method;
+  if(job.kind==='evidence'){
+    const evidence=await read('get_evidence',[m.market_id],'market',config,true);
+    const policy=await read('get_charter',[m.spec.charter_version],'charter',config,true);
+    const count=evidence.filter(e=>e.source_index===job.payload.source_index).length;
+    const budget=Math.floor(policy.max_evidence/m.spec.sources.length);
+    if(count>=budget||(Date.now()/1000<m.spec.observation.end&&count>=Math.floor(budget/2)))return;
+  }
   const args=job.kind==='evidence'?[m.market_id,job.payload.source_index]:[m.market_id];
   if(job.kind==='lifecycle'&&((method==='close_market'&&m.state!=='OPEN')||(method==='resolve'&&!['CLOSED','AWAITING_EVIDENCE','CHALLENGED','APPEALED'].includes(m.state))||(method==='finalize'&&m.state!=='PROVISIONAL')||(method==='settle'&&m.state!=='FINAL')))return;
+  await sql`UPDATE v2_jobs SET payload=payload||${JSON.stringify({actor:client.account.address.toLowerCase(),method})}::jsonb WHERE id=${job.id} AND lease_owner=${job.lease_owner}`;
   const hash=await submitDurably(sql,job,()=>client.writeContract({address:config.contracts.market,functionName:method,args,value:0n}));
   await sql`INSERT INTO v2_transactions(network,tx_hash,actor,method,market_id) VALUES(${config.network},${hash},${client.account.address.toLowerCase()},${method},${m.market_id}) ON CONFLICT DO NOTHING`;
   await enqueue(sql,`track:${hash}`,'track',{hash});

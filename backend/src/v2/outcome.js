@@ -7,5 +7,5 @@ export function outcome(tx,hash,network) {
   const execution = typeof rawExecution === 'number' ? executionResultNumberToName[rawExecution] : rawExecution || null;
   const normalized = String(status).toUpperCase();
   const successful = ['ACCEPTED','FINALIZED'].includes(normalized) && ['FINISHED_WITH_RETURN','SUCCESS'].includes(String(execution).toUpperCase());
-  return {hash,network,status:normalized,execution,successful,finalized:normalized==='FINALIZED',raw:tx};
+  return {hash,network,status:normalized,execution,successful,finalized:normalized==='FINALIZED',raw:JSON.parse(JSON.stringify(tx??null,(_key,value)=>typeof value==='bigint'?value.toString():value))};
 }

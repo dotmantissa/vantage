@@ -18,7 +18,8 @@ export function configuration(env = process.env) {
 export function chainClient(config = configuration(), key) {
   return createClient({chain:chains[sdkNames[config.network]],endpoint:config.rpcUrl,...(key?{account:createAccount(key)}:{})});
 }
-export const decode = raw => typeof raw === 'string' ? JSON.parse(raw) : raw;
+// Preserve wei decimal strings; parsing them as JSON numbers loses precision.
+export const decode = raw => typeof raw === 'string' && (raw.trim().startsWith('{') || raw.trim().startsWith('[')) ? JSON.parse(raw) : raw;
 export async function read(method,args=[],contract='market',config=configuration(),finalized=false) {
   if (!config.configured) throw Object.assign(new Error('V2 contracts are not deployed on this network.'),{status:503});
   return decode(await chainClient(config).readContract({address:config.contracts[contract],functionName:method,args,transactionHashVariant:finalized?TransactionHashVariant.LATEST_FINAL:TransactionHashVariant.LATEST_NONFINAL}));

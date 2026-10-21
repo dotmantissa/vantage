@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { useAuth } from '../v2/auth';
 import { chains, createClient } from 'genlayer-js';
 import {
   ArrowLeft,
@@ -21,8 +21,8 @@ import {
 import { CONTRACTS, formatGen, parseGenToWei, formatDateTime, bpsToPercent } from '../lib/contracts';
 
 export default function MarketDetailPage({ marketId, onBack }) {
-  const { user, authenticated, getAccessToken } = usePrivy();
-  const { wallets } = useWallets();
+  const { user, authenticated, getAccessToken } = useAuth();
+  const { wallets } = useAuth();
   const userAddress = user?.wallet?.address;
 
   const [market, setMarket] = useState(null);

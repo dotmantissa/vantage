@@ -11,10 +11,10 @@ const initial={kind:'commitment',question:'',close:'',start:'',end:'',mode:'BY_D
 const seconds=value=>Math.floor(new Date(value).getTime()/1000);
 export default function Create(){
  const [form,setForm]=useState(()=>{try{return {...initial,...JSON.parse(localStorage.getItem('vantage_proposal')||'{}')};}catch{return initial;}}),[draftId,setDraftId]=useState(''),[seed,setSeed]=useState('10'),[approved,setApproved]=useState(false),[error,setError]=useState(null);
- const auth=useAuth(),action=useTransactions();const address=auth.wallets[0]?.address||auth.user?.wallet?.address;
+ const auth=useAuth(),action=useTransactions();const address=(auth.wallets.find(w=>w.walletClientType==='privy')||auth.wallets[0])?.address||auth.user?.wallet?.address;
  const {data:charter}=useQuery({queryKey:['charter'],queryFn:()=>api('/charter')});
  const {data:config}=useQuery({queryKey:['config'],queryFn:()=>api('/config')});
- const {data:drafts}=useQuery({queryKey:['drafts',address],queryFn:()=>api(`/drafts?author=${address}`),enabled:!!address,refetchInterval:10000});
+ const {data:drafts}=useQuery({queryKey:['drafts',address],queryFn:async()=>{let offset=0,total=1,rows=[];while(offset<total){const page=await api(`/drafts?author=${address}&offset=${offset}`);rows.push(...page.drafts);total=page.total;if(page.next_offset===undefined||page.next_offset<=offset)break;offset=page.next_offset;}return {drafts:rows};},enabled:!!address,refetchInterval:10000});
  const {data:draft,error:draftError}=useQuery({queryKey:['draft',draftId],queryFn:()=>api(`/drafts/${draftId}`),enabled:!!draftId,refetchInterval:10000});
  const update=patch=>{const next={...form,...patch};setForm(next);localStorage.setItem('vantage_proposal',JSON.stringify(next));};
  async function compile(e){e.preventDefault();setError(null);try{

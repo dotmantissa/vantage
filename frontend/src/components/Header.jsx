@@ -1,10 +1,10 @@
 import React from 'react';
-import { usePrivy } from '@privy-io/react-auth';
+import { useAuth } from '../v2/auth';
 import { Scale, BookOpen, PlusCircle, ShieldCheck, Sun, Moon, LogIn, LogOut, Wallet } from 'lucide-react';
 import { formatGen } from '../lib/contracts';
 
 export default function Header({ currentView, setCurrentView, theme, toggleTheme, userBalance }) {
-  const { ready, authenticated, user, login, logout } = usePrivy();
+  const { ready, authenticated, user, login, logout } = useAuth();
 
   const activeWallet = user?.wallet?.address;
   const shortAddress = activeWallet

@@ -70,6 +70,8 @@ router.post('/transactions',requireAuth,route(async(req,res)=>{
   const sender=String(tx?.from_address||tx?.from||tx?.sender||'').toLowerCase();
   if(!sender||sender!==req.user.address)return res.status(403).json({error:'Transaction belongs to a different wallet'});
   const destination=String(tx?.to_address||tx?.recipient||tx?.to||'').toLowerCase();
+  const actualMethod=tx?.txDataDecoded?.callData?.method||tx?.data?.calldata?.method;
+  if(actualMethod&&actualMethod!==method)return res.status(400).json({error:'Tracking method differs from signed transaction'});
   if(destination!==config.contracts.market?.toLowerCase())return res.status(403).json({error:'Transaction does not target the configured market contract'});
   await sql`INSERT INTO v2_transactions(network,tx_hash,actor,method,market_id) VALUES(${config.network},${hash},${req.user.address},${method},${market_id||null}) ON CONFLICT(network,tx_hash) DO NOTHING`;
   await enqueue(sql,`track:${hash}`,'track',{hash});res.status(202).json({hash});
@@ -77,8 +79,8 @@ router.post('/transactions',requireAuth,route(async(req,res)=>{
 router.get('/transactions/:hash',route(async(req,res)=>{
   const config=configuration();const hash=req.params.hash;if(!/^0x[0-9a-fA-F]{64}$/.test(hash))return res.status(400).json({error:'Invalid transaction hash'});
   const tx=await chainClient(config).getTransaction({hash});const result=outcome(tx,hash,config.network);
-  const client=chainClient(config);let appeal={eligible:false,charge_wei:null};
-  try{appeal.eligible=await client.canAppeal({txId:hash});if(appeal.eligible)appeal.charge_wei=String(await client.getMinAppealBond({txId:hash}));}catch{/* Network may not expose appeal methods in Studio. */}
+  const client=chainClient(config);let appeal={available:false,eligible:false,charge_wei:null};
+  try{appeal.eligible=await client.canAppeal({txId:hash});appeal.available=true;if(appeal.eligible)appeal.charge_wei=String(await client.getMinAppealBond({txId:hash}));}catch{/* Network may not expose appeal methods in Studio. */}
   res.json({...result,appeal});
 }));
 router.get('/watchlist',requireAuth,route(async(req,res)=>{await ready();const config=configuration();const rows=await sql`SELECT market_id FROM v2_watchlists WHERE actor=${req.user.address} AND network=${config.network}`;res.json({market_ids:rows.map(r=>r.market_id)});}));

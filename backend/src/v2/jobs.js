@@ -9,5 +9,5 @@ export async function lease(sql,owner=randomUUID()) {
 export async function complete(sql,job) {await sql`UPDATE v2_jobs SET state='done',lease_until=NULL,updated_at=now() WHERE id=${job.id} AND lease_owner=${job.lease_owner}`;}
 export async function fail(sql,job,error) {
   const delay=Math.min(3600,2**Math.min(job.attempts,10)*5);
-  await sql`UPDATE v2_jobs SET state=${job.attempts>=10?'failed':'pending'},run_at=now()+${delay}*interval '1 second',last_error=${String(error.message).slice(0,400)},lease_until=NULL,updated_at=now() WHERE id=${job.id} AND lease_owner=${job.lease_owner}`;
+  await sql`UPDATE v2_jobs SET state=${String(error.message).startsWith('UNCERTAIN_BROADCAST')||job.attempts>=10?'failed':'pending'},run_at=now()+${delay}*interval '1 second',last_error=${String(error.message).slice(0,400)},lease_until=NULL,updated_at=now() WHERE id=${job.id} AND lease_owner=${job.lease_owner}`;
 }

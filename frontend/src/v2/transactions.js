@@ -13,7 +13,7 @@ export function useTransactions(){
   async function clientFor(config){
     if(!available)throw new Error('Wallet signing awaits Privy configuration.');
     if(!authenticated){login();throw new Error('Connect your wallet to sign this action.');}
-    const wallet=wallets[0];if(!wallet)throw new Error('No signing wallet is available.');
+    const wallet=wallets.find(w=>w.walletClientType==='privy')||wallets[0];if(!wallet)throw new Error('No signing wallet is available.');
     await wallet.switchChain(config.chainId);
     const provider=await wallet.getEthereumProvider();
     return {client:createClient({chain:chains[sdkNames[config.network]],endpoint:config.rpcUrl,provider,account:wallet.address}),address:wallet.address};
@@ -41,11 +41,27 @@ export function useTransactions(){
       const config=await api('/config');const {client,address}=await clientFor(config);
       if(!await client.canAppeal({txId:hash}))throw new Error('The network no longer permits an appeal for this transaction.');
       const charge=await client.getMinAppealBond({txId:hash});
-      const tx=await client.appealTransaction({txId:hash,value:charge});
-      const submitted=typeof tx==='string'?tx:tx.hash||tx.transaction_hash;
-      if(submitted)saveTransaction({hash:submitted,method:'native_appeal',network:config.network,actor:address,submitted_at:Date.now(),status:'PENDING'});
+      // Stable SDK returns the ORIGINAL GenLayer tx id, not the appeal's EVM
+      // broadcast hash. Preserve that identity and re-poll its consensus round.
+      await client.appealTransaction({txId:hash,value:charge});
+      const original=savedTransactions().find(t=>t.hash===hash);
+      saveTransaction({...original,hash,method:original?.method||'native_appeal',network:config.network,actor:address,native_appeal_at:Date.now(),status:'PENDING'});
       setMessage('Native appeal submitted. The network will re-evaluate the original transaction.');
     }catch(err){setError(err);}finally{setBusy(false);}
   }
-  return {submit,nativeAppeal,busy,message,error};
+  async function nativeFinalize(hash){
+    setBusy(true);setError(null);
+    try{
+      const config=await api('/config');const {client,address}=await clientFor(config);
+      const result=await client.getTransaction({hash});
+      const status=result.statusName||result.status;
+      if(status!=='ACCEPTED')throw new Error('Only an accepted transaction can be finalized.');
+      if(await client.canAppeal({txId:hash}))throw new Error('Wait for the native appeal window to close.');
+      const evmHash=await client.finalizeTransaction({txId:hash});
+      const original=savedTransactions().find(t=>t.hash===hash);
+      saveTransaction({...original,hash,method:original?.method||'native_finalize',network:config.network,actor:address,finalization_evm_hash:evmHash,status:'ACCEPTED'});
+      setMessage('Network finalization requested. Track the original transaction for its finalized result.');
+    }catch(err){setError(err);}finally{setBusy(false);}
+  }
+  return {submit,nativeAppeal,nativeFinalize,busy,message,error};
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { usePrivy } from '@privy-io/react-auth';
+import { useAuth } from '../v2/auth';
 import {
   Sparkles,
   ShieldAlert,
@@ -31,7 +31,7 @@ const EXAMPLE_QUESTIONS = [
 ];
 
 export default function CreateMarketPage({ onMarketCreated }) {
-  const { user, getAccessToken } = usePrivy();
+  const { user, getAccessToken } = useAuth();
   const userAddress = user?.wallet?.address;
 
   // Multi-stage flow: 1 = Question Formulation & Validator Consultation; 2 = Validator Synthesis & Deployment

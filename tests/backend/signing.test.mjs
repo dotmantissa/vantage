@@ -12,3 +12,13 @@ test('transaction recovery saves the hash before tracking and has no relayer fal
  assert.ok(!code.includes('/relay'));
  assert.match(code,/getMinAppealBond/);
 });
+test('native operations preserve GenLayer identity rather than polling EVM hashes',()=>{
+ const code=readFileSync('frontend/src/v2/transactions.js','utf8');
+ assert.match(code,/finalization_evm_hash:evmHash/);
+ assert.match(code,/native_appeal_at:Date.now/);
+ assert.ok(!/(?:[,{]\s*)hash:evmHash/.test(code));
+});
+test('bigint receipt data can be served as JSON without losing precision',()=>{
+ const result=outcome({status:'FINALIZED',txExecutionResultName:'FINISHED_WITH_RETURN',nonce:9007199254740993n},'hash','testnet_bradbury');
+ assert.equal(result.raw.nonce,'9007199254740993');assert.doesNotThrow(()=>JSON.stringify(result));
+});

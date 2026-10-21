@@ -8,9 +8,9 @@ import {savedTransactions,useTransactions} from '../transactions';
 import {PageHeading,Empty,ErrorNotice,Status,Skeleton} from '../components/Primitives';
 import TransactionStatus from '../components/TransactionStatus';
 import ActionFeedback from '../components/ActionFeedback';
-function RecoveryRow({tx,action}){const {data}=useQuery({queryKey:['transaction',tx.hash],queryFn:()=>api(`/transactions/${tx.hash}`),refetchInterval:10000});return <div><TransactionStatus tx={tx}/>{data?.appeal?.eligible&&<button className="button" disabled={action.busy} onClick={()=>action.nativeAppeal(tx.hash)}>Native appeal · {formatGen(data.appeal.charge_wei)} GEN minimum bond</button>}</div>;}
+function RecoveryRow({tx,action}){const {data}=useQuery({queryKey:['transaction',tx.hash],queryFn:()=>api(`/transactions/${tx.hash}`),refetchInterval:10000});return <div><TransactionStatus tx={tx}/>{data?.appeal?.eligible&&<button className="button" disabled={action.busy} onClick={()=>action.nativeAppeal(tx.hash)}>Native appeal · {formatGen(data.appeal.charge_wei)} GEN minimum bond</button>}{data?.status==='ACCEPTED'&&data?.appeal?.available&&!data?.appeal?.eligible&&<button className="button" disabled={action.busy} onClick={()=>action.nativeFinalize(tx.hash)}>Request network finality</button>}</div>;}
 export default function Portfolio(){
- const auth=useAuth(),action=useTransactions(),address=auth.wallets[0]?.address||auth.user?.wallet?.address;
+ const auth=useAuth(),action=useTransactions(),address=(auth.wallets.find(w=>w.walletClientType==='privy')||auth.wallets[0])?.address||auth.user?.wallet?.address;
  const [transactions,setTransactions]=useState(savedTransactions);
  const {data,error,isPending}=useQuery({queryKey:['portfolio',address],queryFn:()=>api(`/portfolio/${address}`),enabled:!!address,refetchInterval:10000});
  const {data:config}=useQuery({queryKey:['config'],queryFn:()=>api('/config')});

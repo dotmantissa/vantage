@@ -58,7 +58,7 @@ export async function verifyPrivyToken(authHeader) {
 export async function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   const user = await verifyPrivyToken(authHeader);
-  if (!user) {
+  if (!user || !/^0x[0-9a-fA-F]{40}$/.test(user.address || '')) {
     return res.status(401).json({ error: 'Unauthorized: valid Privy token required' });
   }
   req.user = user;

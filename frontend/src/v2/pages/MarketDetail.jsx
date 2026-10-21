@@ -9,7 +9,7 @@ import {Status,ErrorNotice,Skeleton,Empty,SourceSeal} from '../components/Primit
 import ActionFeedback from '../components/ActionFeedback';
 import ProbabilityChart from '../components/ProbabilityChart';
 export default function MarketDetail(){
- const {id}=useParams();const action=useTransactions(),auth=useAuth(),address=auth.wallets[0]?.address||auth.user?.wallet?.address;
+ const {id}=useParams();const action=useTransactions(),auth=useAuth(),address=(auth.wallets.find(w=>w.walletClientType==='privy')||auth.wallets[0])?.address||auth.user?.wallet?.address;
  const [tab,setTab]=useState('Evidence'),[side,setSide]=useState('buy'),[outcome,setOutcome]=useState(0),[amount,setAmount]=useState(''),[slippage,setSlippage]=useState('1'),[liquidity,setLiquidity]=useState(''),[evidenceId,setEvidenceId]=useState(''),[localError,setLocalError]=useState(null);
  const {data:m,error,isPending}=useQuery({queryKey:['market',id],queryFn:()=>api(`/markets/${id}`),refetchInterval:10000});
  const {data:history,error:historyError}=useQuery({queryKey:['history',id],queryFn:()=>api(`/markets/${id}/history`),refetchInterval:15000});
