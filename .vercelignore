@@ -23,3 +23,17 @@ htmlcov
 .idea
 .vscode
 .task-checklist.md
+
+TASKS.md
+AGENT.md
+AGENTS.md
+agent.md
+agents.md
+.env*
+!.env.example
+deployment-v2.pending.json*
+test-results
+playwright-report
+ops
+Dockerfile
+.dockerignore

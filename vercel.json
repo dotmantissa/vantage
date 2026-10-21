@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "buildCommand": "npm --prefix frontend install && npm --prefix frontend run build",
+  "buildCommand": "npm run build",
   "outputDirectory": "frontend/dist",
   "functions": {
     "api/index.js": {
       "maxDuration": 60,
-      "includeFiles": "{backend/**,deployed_contracts.json}"
+      "includeFiles": "{backend/**,shared/**,deployed_contracts.json,deployed_v2.json}"
     }
   },
   "rewrites": [
@@ -17,5 +17,6 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "installCommand": "npm ci && npm --prefix frontend ci"
 }

@@ -10,7 +10,7 @@ import { initDb } from '../backend/src/db.js';
 let dbInitialized = false;
 
 export default async function handler(req, res) {
-  if (!dbInitialized) {
+  if (!dbInitialized && process.env.DATABASE_URL) {
     try {
       await initDb();
       dbInitialized = true;
