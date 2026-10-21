@@ -29,3 +29,11 @@ The archive stores the **consensus record**, including accepted source hash, ori
 Job claims use `FOR UPDATE SKIP LOCKED`, leases and bounded retry. A persisted broadcast hash resumes tracking. A broadcasting intent without a hash is marked failed (`UNCERTAIN_BROADCAST`) and must be reconciled manually against sender/nonce/history before updating that job's payload. This deliberately stops an uncertain job; the operator must not reset it on the assumption that an RPC error means rejection. Different lifecycle revisions have separate keys; one successful action is not repeatedly scheduled each minute.
 
 After fixing credentials or an RPC outage, reset appropriate failed jobs to pending with their hashes/payload intact. Track application disputes separately from native transaction appeals. Reconcile replayed chain state before reopening trading. Rollback frontend/backend releases independently, retaining all V2 tables and deployment records and the V1 archive. Never repoint V2 at V1 contracts.
+
+## Live StudioNet services
+
+V2 is deployed on StudioNet at the verified addresses in `shared/networks.json`; transaction hashes and source hashes are recorded in `docs/V2_DEPLOYMENT.json`. The production alias is https://vantage-genlayer.vercel.app. V1 is preserved under `/legacy`.
+
+Production uses the existing Neon database, `VANTAGE_ARCHIVE=postgres`, and the authenticated `/api/v2/cron` bounded worker. Consensus bundles are stored without overwriting under their SHA-256 key and retrievable at `/api/v2/archives/<hash>`. R2 remains an optional alternative. Production `KEEPER_KEY` and `CRON_SECRET` are protected Vercel secrets; `VANTAGE_CRON_SECRET` is a GitHub Actions secret. No signing secrets enter the browser.
+
+The GitHub Actions keeper runs every five minutes and supports manual dispatch. Scheduled Actions may be delayed by GitHub; actual progress and failures are visible in `/api/v2/health`. The Vercel Hobby daily cron provides a second trigger. Invocations share a database mutex and jobs use atomic leases, persisted broadcast intents and hash recovery. An uncertain broadcast requires operator reconciliation. An invocation handles at most four jobs within its time budget; a later run resumes pending work. This rollout does not require Fly or R2 credentials and does not change the hosting plan.

@@ -18,5 +18,11 @@
       "destination": "/index.html"
     }
   ],
-  "installCommand": "npm ci && npm --prefix frontend ci"
+  "installCommand": "npm ci && npm --prefix frontend ci",
+  "crons": [
+    {
+      "path": "/api/v2/cron",
+      "schedule": "0 0 * * *"
+    }
+  ]
 }

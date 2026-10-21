@@ -1,0 +1,23 @@
+name: Vantage keeper
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+concurrency:
+  group: vantage-production-keeper
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Run authenticated durable jobs
+        env:
+          CRON_SECRET: ${{ secrets.VANTAGE_CRON_SECRET }}
+        run: |
+          test -n "$CRON_SECRET"
+          curl --fail-with-body --silent --show-error --max-time 70 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            https://vantage-genlayer.vercel.app/api/v2/cron
