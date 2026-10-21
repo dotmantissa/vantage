@@ -1,0 +1,15 @@
+.git
+node_modules
+frontend/node_modules
+frontend/dist
+.env*
+TASKS.md
+AGENT.md
+AGENTS.md
+artifacts
+test-results
+playwright-report
+.gltest_cache
+.venv
+__pycache__
+*.log

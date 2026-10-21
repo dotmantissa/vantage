@@ -18,7 +18,10 @@
     "test:backend": "node --test tests/backend/*.test.mjs",
     "worker": "node backend/src/v2/worker.js",
     "deploy:v2": "node deploy/v2.mjs",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "migrate:v2": "node scripts/migrate-v2.mjs",
+    "test:consensus": "pytest tests/integration/test_consensus_v2.py -v -s",
+    "test:runtime": "node scripts/runtime-smoke.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.922.0",

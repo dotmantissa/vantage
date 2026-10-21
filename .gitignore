@@ -47,3 +47,4 @@ playwright-report/
 test-results/
 deployment-v2.pending.json*
 deployed_v2.json*
+!.env.example
