@@ -20,6 +20,7 @@ test('evidence bundle keys are content addressed and archival role explicit',()=
   assert.equal(a.key,b.key);assert.match(a.key,/^consensus\/[0-9a-f]{64}\.json$/);
   assert.equal(JSON.parse(a.body).kind,'consensus-evidence-record');
   assert.notEqual(a.key,evidenceBundle({...e,observed_at:2}).key);
+  assert.equal(a.key,evidenceBundle({observed_at:1,content_hash:'0x123',id:'m-1:e-1'}).key);
 });
 test('unknown chain fails closed and undeployed V2 is explicit',()=>{
   assert.throws(()=>configuration({VANTAGE_NETWORK:'wrong'}),/Unknown/);

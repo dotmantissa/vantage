@@ -1,4 +1,5 @@
 import express from 'express';
+import {isDeepStrictEqual} from 'node:util';
 import { sql } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { configuration, read, chainClient,withDeployment } from './config.js';
@@ -42,7 +43,12 @@ router.get('/markets/:id',route(async(req,res)=>{
   const [prices,evidence,resolution]=await Promise.all([read('get_prices',[req.params.id]),read('get_evidence',[req.params.id]),read('get_resolution_record',[req.params.id])]);
   res.json({...m,prices_bps:prices.prices_bps,evidence,resolution});
 }));
-router.get('/markets/:id/evidence',route(async(req,res)=>res.json({evidence:await read('get_evidence',[req.params.id])})));
+router.get('/markets/:id/evidence',route(async(req,res)=>{
+  const config=configuration(),evidence=await read('get_evidence',[req.params.id]);
+  await ready();const rows=await sql`SELECT evidence_id,archive_key,body FROM v2_evidence WHERE network=${config.network} AND contract=${config.contracts.market} AND market_id=${req.params.id}`;
+  const matches=new Map(rows.map(r=>[r.evidence_id,r]));
+  res.json({evidence:evidence.map(e=>{const archived=matches.get(e.id);return {...e,archive_key:archived&&isDeepStrictEqual(archived.body,e)?archived.archive_key:null};})});
+}));
 router.get('/markets/:id/position/:address',route(async(req,res)=>{
   if(!/^0x[0-9a-fA-F]{40}$/.test(req.params.address))return res.status(400).json({error:'Invalid wallet address'});
   res.json(await read('get_position',[req.params.id,req.params.address]));

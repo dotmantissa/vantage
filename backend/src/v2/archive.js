@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 export function evidenceBundle(evidence) {
-  const body=Buffer.from(JSON.stringify({schema_version:2,kind:'consensus-evidence-record',evidence}));
+  const canonical=value=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(k=>[k,canonical(value[k])])):value;
+  const body=Buffer.from(JSON.stringify(canonical({schema_version:2,kind:'consensus-evidence-record',evidence})));
   const hash=createHash('sha256').update(body).digest('hex');
   return {body,key:`consensus/${hash}.json`,hash};
 }
