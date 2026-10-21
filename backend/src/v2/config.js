@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { chains, createClient, createAccount } from 'genlayer-js';
+import {TransactionHashVariant} from 'genlayer-js/types';
 import networks from '../../../shared/networks.json' with { type: 'json' };
 const sdkNames = {studionet:'studionet',testnet_bradbury:'testnetBradbury',localnet:'localnet'};
 export function configuration(env = process.env) {
@@ -18,7 +19,7 @@ export function chainClient(config = configuration(), key) {
   return createClient({chain:chains[sdkNames[config.network]],endpoint:config.rpcUrl,...(key?{account:createAccount(key)}:{})});
 }
 export const decode = raw => typeof raw === 'string' ? JSON.parse(raw) : raw;
-export async function read(method,args=[],contract='market',config=configuration()) {
+export async function read(method,args=[],contract='market',config=configuration(),finalized=false) {
   if (!config.configured) throw Object.assign(new Error('V2 contracts are not deployed on this network.'),{status:503});
-  return decode(await chainClient(config).readContract({address:config.contracts[contract],functionName:method,args}));
+  return decode(await chainClient(config).readContract({address:config.contracts[contract],functionName:method,args,transactionHashVariant:finalized?TransactionHashVariant.LATEST_FINAL:TransactionHashVariant.LATEST_NONFINAL}));
 }

@@ -6,7 +6,7 @@ export function evidenceBundle(evidence) {
   return {body,key:`consensus/${hash}.json`,hash};
 }
 export async function archiveEvidence(evidence,env=process.env) {
-  if(!env.R2_ENDPOINT||!env.R2_BUCKET||!env.R2_ACCESS_KEY_ID||!env.R2_SECRET_ACCESS_KEY)return null;
+  if(!env.R2_ENDPOINT||!env.R2_BUCKET||!env.R2_ACCESS_KEY_ID||!env.R2_SECRET_ACCESS_KEY)throw new Error('Evidence archive unavailable: configure R2 credentials');
   const bundle=evidenceBundle(evidence);
   const client=new S3Client({region:'auto',endpoint:env.R2_ENDPOINT,credentials:{accessKeyId:env.R2_ACCESS_KEY_ID,secretAccessKey:env.R2_SECRET_ACCESS_KEY}});
   await client.send(new PutObjectCommand({Bucket:env.R2_BUCKET,Key:bundle.key,Body:bundle.body,ContentType:'application/json',IfNoneMatch:'*'})).catch(e=>{if(e.$metadata?.httpStatusCode!==412)throw e;});
