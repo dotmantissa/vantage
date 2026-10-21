@@ -90,7 +90,7 @@ def warp_past_close(m,direct_vm):
     direct_vm.warp(time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime(m['spec']['close_time']+1)))
 
 def complete_resolution(market,direct_vm,m):
-    evidence_mock(direct_vm,int(time.time()))
+    evidence_mock(direct_vm,m["created_at"])
     market.record_evidence(m['market_id'],0)
     warp_past_close(m,direct_vm)
     market.close_market(m['market_id'])
