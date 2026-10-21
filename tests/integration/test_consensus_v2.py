@@ -44,7 +44,7 @@ def proposal():
       'criteria':[{'id':'c1','description':'The capability is available to public users'}]}
 
 def mock_review(engine):
-    engine.vm.mock_web('.*api.github.com.*',{'status':200,'body':'The capability is available to public users. release-1'})
+    engine.vm.mock_web('.*api.github.com.*',{'status':200,'body':json.dumps({'content':'The capability is available to public users. release-1'})})
     engine.vm.mock_llm('.*Review a prediction market.*',json.dumps({'resolvable':True,'checks':{k:True for k in ['observable_criteria','coherent_outcomes','historical_source_suitable','explicit_observation']},'issues':[],'relevant_precedents':[],'summary':'Observable delivery.'}))
     engine.vm.mock_llm('.*Compare these independent.*',json.dumps({'equivalent':True}))
 

@@ -86,6 +86,36 @@ def test_missing_history_and_incomplete_negatives_are_insufficient(market,direct
     e=json.loads(market.record_evidence(m['market_id'],0))
     assert all(c['decision']=='INSUFFICIENT' for c in e['criteria'])
 
+def test_json_release_provenance_uses_source_timestamp_and_citation_paths(market,direct_vm):
+    p=proposal();p['sources'][0]['mode']='json';p['sources'][0]['url']='https://api.github.com/repos/example/project/releases/123'
+    draft=json.loads(market.compile_draft(json.dumps(p)))
+    direct_vm.value=10500
+    m=json.loads(market.activate_draft(draft['id'],draft['spec_hash'],'10000'))
+    direct_vm.value=0
+    published=time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime(m['created_at']-1))
+    direct_vm._web_mocks.clear()
+    direct_vm.mock_web('.*api.github.com.*',{'status':200,'body':json.dumps({'id':123,'published_at':published,'tag_name':'v1.1.8','tarball_url':'https://example.com/source.tar.gz'})})
+    evidence_mock(direct_vm,1746573225,record_id='invented',criteria=[
+      {'id':'released','decision':'MET','citation':'invented joining words','citation_paths':['/tag_name']},
+      {'id':'available','decision':'MET','citation':'wrong spacing','citation_paths':['/tarball_url']}])
+    e=json.loads(market.record_evidence(m['market_id'],0))
+    assert e['observed_at']==m['created_at']-1
+    assert e['record_id']=='123' and e['historical_verified']
+    assert e['criteria'][0]['citation']=='/tag_name = "v1.1.8"'
+    assert e['facts']=={}
+
+def test_json_citation_cannot_name_a_missing_source_field(market,direct_vm):
+    m=activate(market,direct_vm)
+    p=json.loads(market.markets[m['market_id']]);p['spec']['sources'][0]['mode']='json'
+    market.markets[m['market_id']]=json.dumps(p)
+    direct_vm._web_mocks.clear()
+    direct_vm.mock_web('.*api.github.com.*',{'status':200,'body':'{}'})
+    evidence_mock(direct_vm,m['created_at'],criteria=[
+      {'id':'released','decision':'MET','citation':'invented','citation_paths':['/missing']},
+      {'id':'available','decision':'MET','citation':'invented','citation_paths':['/missing']}])
+    with pytest.raises(Exception,match='Citation path absent'):
+        market.record_evidence(m['market_id'],0)
+
 def warp_past_close(m,direct_vm):
     direct_vm.warp(time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime(m['spec']['close_time']+1)))
 
