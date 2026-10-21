@@ -7,6 +7,7 @@ import { enqueue } from './jobs.js';
 import { migrateV2 } from './schema.js';
 import {runOnce} from './runner.js';
 import {cronAuthorized} from './cron-auth.js';
+import {cachedRead} from './rpc-cache.js';
 const router=express.Router();
 let migration;
 const ready=()=>migration||(migration=migrateV2(sql).catch(error=>{migration=null;throw error;}));
@@ -91,9 +92,9 @@ router.post('/transactions',requireAuth,route(async(req,res)=>{
 }));
 router.get('/transactions/:hash',route(async(req,res)=>{
   const config=configuration();const hash=req.params.hash;if(!/^0x[0-9a-fA-F]{64}$/.test(hash))return res.status(400).json({error:'Invalid transaction hash'});
-  const tx=await chainClient(config).getTransaction({hash});const result=outcome(tx,hash,config.network);
+  const tx=await cachedRead(JSON.stringify([config.rpcUrl,'transaction',hash]),()=>chainClient(config).getTransaction({hash}));const result=outcome(tx,hash,config.network);
   const client=chainClient(config);let appeal={available:false,eligible:false,charge_wei:null};
-  try{appeal.eligible=await client.canAppeal({txId:hash});appeal.available=true;if(appeal.eligible)appeal.charge_wei=String(await client.getMinAppealBond({txId:hash}));}catch{/* Network may not expose appeal methods in Studio. */}
+  if(!result.finalized)try{appeal=await cachedRead(JSON.stringify([config.rpcUrl,'appeal',hash]),async()=>{const eligible=await client.canAppeal({txId:hash});return {available:true,eligible,charge_wei:eligible?String(await client.getMinAppealBond({txId:hash})):null};});}catch{/* Network may not expose appeal methods in Studio. */}
   res.json({...result,appeal});
 }));
 router.get('/watchlist',requireAuth,route(async(req,res)=>{await ready();const config=configuration();const rows=await sql`SELECT market_id FROM v2_watchlists WHERE actor=${req.user.address} AND network=${config.network}`;res.json({market_ids:rows.map(r=>r.market_id)});}));

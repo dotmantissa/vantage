@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { chains, createClient, createAccount } from 'genlayer-js';
 import {TransactionHashVariant} from 'genlayer-js/types';
+import {cachedRead} from './rpc-cache.js';
 import networks from '../../../shared/networks.json' with { type: 'json' };
 const sdkNames = {studionet:'studionet',testnet_bradbury:'testnetBradbury',localnet:'localnet'};
 export function configuration(env = process.env) {
@@ -22,5 +23,6 @@ export function chainClient(config = configuration(), key) {
 export const decode = raw => typeof raw === 'string' && (raw.trim().startsWith('{') || raw.trim().startsWith('[')) ? JSON.parse(raw) : raw;
 export async function read(method,args=[],contract='market',config=configuration(),finalized=false) {
   if (!config.configured) throw Object.assign(new Error('V2 contracts are not deployed on this network.'),{status:503});
-  return decode(await chainClient(config).readContract({address:config.contracts[contract],functionName:method,args,transactionHashVariant:finalized?TransactionHashVariant.LATEST_FINAL:TransactionHashVariant.LATEST_NONFINAL}));
+  const key=JSON.stringify([config.rpcUrl,config.contracts[contract],method,args,finalized]);
+  return cachedRead(key,async()=>decode(await chainClient(config).readContract({address:config.contracts[contract],functionName:method,args,transactionHashVariant:finalized?TransactionHashVariant.LATEST_FINAL:TransactionHashVariant.LATEST_NONFINAL})));
 }

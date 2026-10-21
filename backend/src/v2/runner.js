@@ -18,9 +18,9 @@ export async function schedule(config) {
     else if(['CLOSED','AWAITING_EVIDENCE','CHALLENGED','APPEALED'].includes(m.state)&&now>=Math.max(m.spec.observation.end,m.next_retry||0))method='resolve';
     else if(m.state==='PROVISIONAL'&&now>m.appeal_deadline)method='finalize';
     else if(m.state==='FINAL')method='settle';
-    if(method)await enqueue(sql,`${config.network}:${mid}:${method}:${m.state}:${m.resolution_revision}:${m.next_retry||0}`,'lifecycle',{market_id:mid,method});
+    if(method)await enqueue(sql,`${config.network}:${config.contracts.market}:${mid}:${method}:${m.state}:${m.resolution_revision}:${m.next_retry||0}`,'lifecycle',{market_id:mid,method});
     if(['OPEN','CLOSED','AWAITING_EVIDENCE','PROVISIONAL','CHALLENGED','APPEALED'].includes(m.state)&&now<= (m.terminal_deadline||m.grace_deadline)) {
-      for(let i=0;i<m.spec.sources.length;i++)await enqueue(sql,`${config.network}:${mid}:evidence:${i}:${Math.floor(now/900)}`,'evidence',{market_id:mid,source_index:i});
+      for(let i=0;i<m.spec.sources.length;i++)await enqueue(sql,`${config.network}:${config.contracts.market}:${mid}:evidence:${i}:${Math.floor(now/900)}`,'evidence',{market_id:mid,source_index:i});
     }
   }
 }
