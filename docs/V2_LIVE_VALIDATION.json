@@ -1,0 +1,440 @@
+{
+  "purpose": "Live StudioNet release validation; actual frontend activation, checkpoint, close, resolve, finalize, settle, claim and withdraw",
+  "steps": [
+    {
+      "method": "buy",
+      "hash": "0xa3f7fd809bf96736242c7d0096dd41657490933016fc2777dc14a6d30bde0e97",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "contract": "0x55FfEaeB2e41a64824a8E8cB163c1Ea81370B194"
+    },
+    {
+      "method": "sell",
+      "hash": "0xc31fba3fa2a3d7ed4652ac8c704c216d41f0fba517ca612b360ee5293e85e60b",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "contract": "0x55FfEaeB2e41a64824a8E8cB163c1Ea81370B194"
+    },
+    {
+      "method": "add_liquidity",
+      "hash": "0xe7f35111f86b7950850f8fbed64dfba20edde24f01472ed074df58a671406baa",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "contract": "0x55FfEaeB2e41a64824a8E8cB163c1Ea81370B194"
+    },
+    {
+      "method": "remove_liquidity",
+      "hash": "0x84cc415d089e35c2857441cca754ff06c7fcc0d04870405b02bc41a13b14f662",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "contract": "0x55FfEaeB2e41a64824a8E8cB163c1Ea81370B194"
+    },
+    {
+      "method": "record_evidence",
+      "hash": "0xc9b66506f1bd83d5df04d4e22876263b9e74ccb543bdbe7846e8c313a13eb081",
+      "status": "UNDETERMINED",
+      "execution": "ERROR",
+      "consensus": "MAJORITY_DISAGREE",
+      "successful": false,
+      "finalized": false,
+      "contract": "0x55FfEaeB2e41a64824a8E8cB163c1Ea81370B194"
+    },
+    {
+      "method": "record_evidence",
+      "hash": "0x2cb4154d403417a8bd534232b0c15ee0ccd64e4a9b78d6f52c1edf980477d386",
+      "status": "FINALIZED",
+      "execution": "ERROR",
+      "consensus": "MAJORITY_DISAGREE",
+      "successful": false,
+      "finalized": true,
+      "contract": "0x55FfEaeB2e41a64824a8E8cB163c1Ea81370B194"
+    },
+    {
+      "method": "activate_draft",
+      "hash": "0x6c1c7d485dec36db90103e03f6f7574a090eb7f229d03726ed59a08e6caa94bd",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9"
+    },
+    {
+      "method": "record_evidence",
+      "hash": "0x7fb927e568c32ac28eb4e5696aab5bae3a1b03b47229b3f623acda6f95f8c3da",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9"
+    },
+    {
+      "method": "close_market",
+      "hash": "0xa18b4ca6e7b3523d276bdab67231c707fb878aaacee4c399b2843fb4837b3dc1",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9"
+    },
+    {
+      "method": "resolve",
+      "hash": "0x0c9c42dc6ff2c59e79484e6c9f6a390d0eeaac9416fce9c4889741e841e1d623",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9"
+    },
+    {
+      "method": "finalize",
+      "hash": "0xa40cd745ccf936b02e44cee60f6faf1e9c021bb9560a13997ede0d580c12332f",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9"
+    },
+    {
+      "method": "settle",
+      "hash": "0x1a343fe5f706ee7386f5e5d8abfff07da1d14fc68bfd89338a053ac2c33e69d2",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9"
+    },
+    {
+      "method": "claim",
+      "hash": "0x5b370c44e281c5d82ee1c02cc2afb8c5bd17bac475d8460fb7613b73ec768fb4",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9"
+    },
+    {
+      "method": "withdraw",
+      "hash": "0x5759eb29f3624c31516ea1c506d616ca2f1a4892157ac913e9123a32259fc2d9",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9"
+    },
+    {
+      "method": "resolve",
+      "hash": "0x1e6328cdc5d70ff1321b1375828eda074cc591ca74cd8d17aaff99a8e0df21dd",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "contract": "0x55FfEaeB2e41a64824a8E8cB163c1Ea81370B194"
+    },
+    {
+      "method": "compile_draft",
+      "hash": "0x344f78800c5fd87d7243e9a4376b817e5ffc2efb3b8949ff8de351973577db14",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9"
+    },
+    {
+      "method": "claim",
+      "hash": "0xf79df12984f25fa00d43ddc738c8a46493a675cb4ff0e4f269f2dae23f8bfabe",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "contract": "0x55FfEaeB2e41a64824a8E8cB163c1Ea81370B194"
+    },
+    {
+      "method": "activate_draft",
+      "hash": "0x9115beeaf0cffea5256b54b9483945d6628a07f60d740233c1cc7cedc684f38c",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9"
+    },
+    {
+      "method": "withdraw",
+      "hash": "0xf5c01f959f30dae26922a14c7f730f77cfe8d5834c8d2f22685e4e36d5125397",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "contract": "0x55FfEaeB2e41a64824a8E8cB163c1Ea81370B194"
+    },
+    {
+      "method": "buy",
+      "hash": "0x42ff131a69158fe5530960d1586ca4050073e99c1a8e943c0c9ce556542775a1",
+      "status": "FINALIZED",
+      "execution": "SUCCESS",
+      "consensus": "MAJORITY_AGREE",
+      "successful": true,
+      "finalized": true,
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9"
+    },
+    {
+      "method": "compile_draft",
+      "hash": "0x46b7c670bac23c3954cc95fef4e760ba872c0faf793d5bdcfac734d549390c8e",
+      "status": "CANCELED",
+      "execution": null,
+      "consensus": "NO_MAJORITY",
+      "successful": false,
+      "finalized": false,
+      "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9"
+    }
+  ],
+  "deploy_hash": "0x1db871dac8d1b7973c5f16cdc191cf85798a8cc914a81a827a1d23da51b0d7d9",
+  "source_verified": true,
+  "compile_hash": "0x56e6f1c99fe2501d274c244dab21a452504844d72383db7170490e0f6300bf9b",
+  "smoke_select_hash": "0x18a5c604000afd97633278bc0b30a22b28bc49290961019bd1dd9f9f5e51d9bf",
+  "event_compile_hash": "0x64a77b136336bcdc2af25c87b607f863ea13dfa5b81ec76bf2f9196727dd250f",
+  "restore_hash": "0x4e1400d7b32e59ac69ee3a4be8912d67434ead475ef9c4e24e46dd118c01520b",
+  "activate_hash": "0x6c1c7d485dec36db90103e03f6f7574a090eb7f229d03726ed59a08e6caa94bd",
+  "evidence_hash": "0x7fb927e568c32ac28eb4e5696aab5bae3a1b03b47229b3f623acda6f95f8c3da",
+  "evidence_verified": true,
+  "close_hash": "0xa18b4ca6e7b3523d276bdab67231c707fb878aaacee4c399b2843fb4837b3dc1",
+  "resolve_hash": "0x0c9c42dc6ff2c59e79484e6c9f6a390d0eeaac9416fce9c4889741e841e1d623",
+  "finalize_hash": "0xa40cd745ccf936b02e44cee60f6faf1e9c021bb9560a13997ede0d580c12332f",
+  "registrar_hash": "0xededaa9386195deb9c57d97dc79a08c75cf0be22c349e3d201a804ddba54f86c",
+  "settle_hash": "0x1a343fe5f706ee7386f5e5d8abfff07da1d14fc68bfd89338a053ac2c33e69d2",
+  "precedents": {
+    "total": 1,
+    "id": "m-1",
+    "delivery": "Observed in operational Memory after settlement finality"
+  },
+  "claim_hash": "0x5b370c44e281c5d82ee1c02cc2afb8c5bd17bac475d8460fb7613b73ec768fb4",
+  "withdraw_hash": "0x5759eb29f3624c31516ea1c506d616ca2f1a4892157ac913e9123a32259fc2d9",
+  "withdraw_before": {
+    "wallet": "0x2e17351bea1bfecf79",
+    "contract": "0xde444324c2a8000",
+    "credit": "1001000000000000000"
+  },
+  "withdraw_success": {
+    "hash": "0x5759eb29f3624c31516ea1c506d616ca2f1a4892157ac913e9123a32259fc2d9",
+    "network": "studionet",
+    "status": "FINALIZED",
+    "execution": "SUCCESS",
+    "consensus": "MAJORITY_AGREE",
+    "successful": true,
+    "finalized": true,
+    "appeal": {
+      "available": false,
+      "eligible": false,
+      "charge_wei": null
+    }
+  },
+  "withdraw_message_value": "1001000000000000000",
+  "network": "studionet",
+  "frontend": "https://vantage-genlayer.vercel.app",
+  "contract": "0x7Cc9dd65dA0801Cf4eF3CdbaEAbF5bB4754396a9",
+  "checks": {
+    "source_matches": true,
+    "active_charter": "v2.1",
+    "withdrawal_finalized": true,
+    "withdrawal_credit_wei": "1001000000000000000",
+    "disputes": "30s lifecycle dispute window elapsed; 180s draft cancelled behind stalled network queue; application disputes remain unverified",
+    "archive": "Retrieved production consensus JSON, HTTP200, SHA256matches",
+    "semantic_retrieval": "Operational Memory search returned finalizedm-1 after actual embeddings"
+  },
+  "withdraw_after": {
+    "wallet": "0x2e17351bea1bfecf79",
+    "contract": "0x0",
+    "credit": "0"
+  },
+  "transfer_verified": true,
+  "archive": {
+    "key": "consensus/eed8e9de0868e9c95a1089c66a04df2868e4a87adecbe1c5e1c4a9ce9d517548.json",
+    "status": 200,
+    "hashMatches": true,
+    "bytes": 799
+  },
+  "demo": {
+    "compile_hash": "0x344f78800c5fd87d7243e9a4376b817e5ffc2efb3b8949ff8de351973577db14",
+    "activate_hash": "0x9115beeaf0cffea5256b54b9483945d6628a07f60d740233c1cc7cedc684f38c",
+    "market_id": "m-2",
+    "charter": "v2.1",
+    "purpose": "Open market with full24h+24h dispute windows",
+    "buy_hash": "0x42ff131a69158fe5530960d1586ca4050073e99c1a8e943c0c9ce556542775a1"
+  },
+  "old_recovery": {
+    "old_void_hash": "0x1e6328cdc5d70ff1321b1375828eda074cc591ca74cd8d17aaff99a8e0df21dd",
+    "old_claim_hash": "0xf79df12984f25fa00d43ddc738c8a46493a675cb4ff0e4f269f2dae23f8bfabe",
+    "old_withdraw_hash": "0xf5c01f959f30dae26922a14c7f730f77cfe8d5834c8d2f22685e4e36d5125397"
+  },
+  "vision": {
+    "purpose": "Actual hosted screenshot and independent model classification probe",
+    "deploy_hash": "0x54def2572f3fc82f89528286776033be28b86c4a32186a00bdd675e2eff46bfc",
+    "address": "0x72D579493A9B4FE604CB2BF6F19d9d8B54846455",
+    "inspect_hash": "0x62ef57adfa695c7149f4bce9388bdf385513a72c35855070ca08bdb76b0a8e00",
+    "status": "FINALIZED",
+    "execution": "SUCCESS",
+    "consensus": "MAJORITY_AGREE",
+    "result": {
+      "github_release": true,
+      "version_visible": true
+    },
+    "scope": "Screenshot/model capability probe, separate from market evidence lifecycle"
+  },
+  "actor": "0xBC1399c55538eC034d4Da550C03c34Ae0C357f53",
+  "dispute_attempt": {
+    "purpose": "Explicitly labeled 180-second dispute policy test",
+    "publish_hash": "0xe1d33eff5f6cd3871b01214e366e9c25ec5c2e55dc502c16a62d454eb964f1ad",
+    "select_hash": "0xd5f72350864dfe5c74f623feecbc4908ab6d2b8c2add448d8f0d5d38dba3af95",
+    "compile_hash": "0x46b7c670bac23c3954cc95fef4e760ba872c0faf793d5bdcfac734d549390c8e",
+    "restore_hash": "0x5f85f7803f27f3d536fe6dff4020ba838b6cbf5c71c4208e9af44e8ceb7dee68",
+    "cancellation_failure": "Network refused cancellation of COMMITTING evidence transaction",
+    "cancel_compile": {
+      "transaction_hash": "0x46b7c670bac23c3954cc95fef4e760ba872c0faf793d5bdcfac734d549390c8e",
+      "status": "CANCELED"
+    },
+    "compile_status": {
+      "hash": "0x46b7c670bac23c3954cc95fef4e760ba872c0faf793d5bdcfac734d549390c8e",
+      "network": "studionet",
+      "status": "CANCELED",
+      "execution": null,
+      "consensus": "NO_MAJORITY",
+      "successful": false,
+      "finalized": false
+    },
+    "standard_restored": true,
+    "blocked_evidence": {
+      "hash": "0x8b9aea409e723907ed3da1d4491c17a2f5c735154857518435f1c86c18e9c8ea",
+      "status": "COMMITTING",
+      "last_monitoring": 1792599879.3184195
+    },
+    "extra_checkpoints": [
+      {
+        "hash": "0x6c4dd0ab4ccdbbf53a0f3643aa54346d369a35d2fbecfe9c52d4dc3383ef6c0c",
+        "status": "PROPOSING"
+      }
+    ],
+    "extra_cleanup_error": "StudioNet cancellation request returned hourly rate limit; verify transaction status before retry"
+  },
+  "hosting": {
+    "deployment_id": "dpl_CSLtNqBJgjk1yEdnw2XkHtsJc3W4",
+    "deployment_url": "https://vantage-protocol-1d03qelqt-mantissas-projects.vercel.app",
+    "code_commit": "5017ee0",
+    "alias": "https://vantage-genlayer.vercel.app",
+    "state": "READY; requested alias assigned and live UI/API verified",
+    "browser_errors": 0,
+    "queue_notice_visible": true,
+    "mobile_overflow": false,
+    "mobile_browser_errors": 0
+  },
+  "verification": {
+    "direct_contract_tests": 171,
+    "controlled_five_validator_tests": 2,
+    "backend_tests": 33,
+    "browser_cases": 6,
+    "lint": "passed",
+    "build": "passed",
+    "prior_full_ci": "https://github.com/dotmantissa/vantage/actions/runs/39634775988",
+    "full_ci": "https://github.com/dotmantissa/vantage/actions/runs/39637681783"
+  },
+  "services": {
+    "status": "degraded",
+    "configured": true,
+    "jobs": [
+      {
+        "state": "pending",
+        "count": 3
+      },
+      {
+        "state": "done",
+        "count": 41
+      }
+    ],
+    "failures": [
+      {
+        "id": "50",
+        "kind": "track",
+        "state": "pending",
+        "last_error": "Waiting for network consensus: 0x8b9aea409e723907ed3da1d4491c17a2f5c735154857518435f1c86c18e9c8ea (COMMITTING)",
+        "updated_at": "2026-10-21T16:54:02.174Z"
+      },
+      {
+        "id": "55",
+        "kind": "track",
+        "state": "pending",
+        "last_error": "Waiting for network consensus: 0x6c4dd0ab4ccdbbf53a0f3643aa54346d369a35d2fbecfe9c52d4dc3383ef6c0c (COMMITTING)",
+        "updated_at": "2026-10-21T16:54:01.914Z"
+      },
+      {
+        "id": "58",
+        "kind": "track",
+        "state": "pending",
+        "last_error": "Waiting for network consensus: 0x397ead6714400275b59dd50c2ab22551bfa08a235d8b6179d41d359fc2013e8d (PENDING)",
+        "updated_at": "2026-10-21T16:54:01.591Z"
+      }
+    ],
+    "pending_transactions": [
+      {
+        "tx_hash": "0x397ead6714400275b59dd50c2ab22551bfa08a235d8b6179d41d359fc2013e8d",
+        "method": "record_evidence",
+        "status": "PENDING",
+        "updated_at": "2026-10-21T16:54:01.575Z"
+      },
+      {
+        "tx_hash": "0x6c4dd0ab4ccdbbf53a0f3643aa54346d369a35d2fbecfe9c52d4dc3383ef6c0c",
+        "method": "record_evidence",
+        "status": "COMMITTING",
+        "updated_at": "2026-10-21T16:54:01.895Z"
+      },
+      {
+        "tx_hash": "0x8b9aea409e723907ed3da1d4491c17a2f5c735154857518435f1c86c18e9c8ea",
+        "method": "record_evidence",
+        "status": "COMMITTING",
+        "updated_at": "2026-10-21T16:54:02.156Z"
+      }
+    ],
+    "last_index": "2026-10-21T16:53:54.716Z",
+    "archive_configured": true,
+    "archive_backend": "postgres",
+    "keeper_configured": true,
+    "last_worker": {
+      "started_at": "2026-10-21T16:53:49.474Z",
+      "finished_at": "2026-10-21T16:54:02.206Z",
+      "body": {
+        "index": {
+          "markets": 2,
+          "configured": true
+        },
+        "failed": 0,
+        "waiting": 3,
+        "processed": 0,
+        "configured": true
+      }
+    },
+    "observed_at": "2026-10-21T16:54:02Z",
+    "status_explanation": "Three existing evidence broadcasts await StudioNet consensus. New automated writes are paused; indexing/archive remain configured."
+  }
+}
