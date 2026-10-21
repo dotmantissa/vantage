@@ -22,7 +22,7 @@ router.get('/archives/:hash',route(async(req,res)=>{
   if(!rows.length)return res.status(404).json({error:'Archive not found'});
   res.set('Cache-Control','public, max-age=31536000, immutable').type('application/json').send(rows[0].body);
 }));
-router.get('/config',(_req,res)=>res.json({...configuration(),capabilities:{userSigning:true,nativeAppeals:true,protocolFeeDistribution:false},preview:process.env.VANTAGE_PREVIEW==='1'}));
+router.get('/config',(_req,res)=>{const config=configuration();res.json({...config,capabilities:{userSigning:true,nativeAppeals:true,protocolFeeDistribution:false,finalizedCrossContractReads:config.network!=='studionet'},preview:config.network==='studionet'||process.env.VANTAGE_PREVIEW==='1'});});
 router.get('/markets',route(async(req,res)=>{
   const config=configuration();if(!config.configured)return res.json({markets:[],configured:false,total:0});
   await ready();const rows=await sql`SELECT body,prices,indexed_at FROM v2_markets WHERE network=${config.network} AND contract=${config.contracts.market} ORDER BY market_id DESC`;

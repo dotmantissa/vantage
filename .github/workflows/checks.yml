@@ -2,7 +2,7 @@ name: Vantage checks
 on: [push, pull_request]
 jobs:
   checks:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -11,6 +11,18 @@ jobs:
         with: {python-version: '3.12'}
       - run: npm ci && npm --prefix frontend ci
       - run: pip install -r requirements.txt
+      - name: Cache pinned GenVM runtime
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/gltest-direct
+          key: genvm-runners-v0.3.0-rc7
+      - name: Fetch pinned GenVM runners
+        run: |
+          mkdir -p "$HOME/.cache/gltest-direct"
+          test -f "$HOME/.cache/gltest-direct/genvm-universal-v0.3.0-rc7.tar.xz" || \
+            curl --fail --location --retry 3 \
+              https://github.com/genlayerlabs/genvm/releases/download/v0.3.0-rc7/genvm-runners-all.tar.xz \
+              -o "$HOME/.cache/gltest-direct/genvm-universal-v0.3.0-rc7.tar.xz"
       - run: npm run lint:contracts
       - run: npm run test:contracts
       - run: npm run test:backend

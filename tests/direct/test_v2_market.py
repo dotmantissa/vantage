@@ -54,6 +54,11 @@ def test_activation_locks_spec_and_starts_seeded_book(market,direct_vm):
     assert m['spec']['spec_hash']==m['spec_hash']
     assert json.loads(market.list_activity())['total']==2
 
+def test_finalized_cross_reads_are_default_and_preview_is_explicit(market):
+    assert json.loads(market.get_config())['finalized_reads'] is True
+    market.finalized_reads = False
+    assert json.loads(market.get_config())['finalized_reads'] is False
+
 def test_irrelevant_roots_and_related_publishers_rejected(market):
     p=proposal();p['sources'][0]['url']='https://api.github.com/'
     with pytest.raises(Exception,match='fact path'):

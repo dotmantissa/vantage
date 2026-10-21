@@ -30,7 +30,7 @@ async function deploy(name,args=[]){
 console.log(`Fresh V2 deployment on ${config.network}; V1 remains at its existing addresses.`);
 const charter=await deploy('charter');
 const memory=await deploy('memory');
-const market=await deploy('market',[charter,memory]);
+const market=await deploy('market',[charter,memory,config.network!=='studionet']);
 if(!journal.steps.registrar){journal.steps.registrar={broadcast_state:'broadcasting'};persist();journal.steps.registrar.hash=await client.writeContract({address:memory,functionName:'set_registrar',args:[market],value:0n});journal.steps.registrar.broadcast_state='submitted';persist();}
 if(!journal.steps.registrar.hash)throw new Error('Uncertain registrar submission: reconcile before continuing.');
 await verified(journal.steps.registrar.hash);
@@ -40,6 +40,8 @@ const policy=decode(await client.readContract({address:charter,functionName:'get
 if(policy.version!=='v2.1')throw new Error('Unexpected charter version.');
 const markets=decode(await client.readContract({address:market,functionName:'list_markets',args:[0,1]}));
 if(markets.total!==0)throw new Error('Fresh market was expected to be empty.');
+const marketConfig=decode(await client.readContract({address:market,functionName:'get_config',args:[]}));
+if(marketConfig.finalized_reads!==(config.network!=='studionet'))throw new Error('Unexpected cross-contract finality configuration.');
 const result={schema_version:2,network:config.network,chainId:config.chainId,deployer:client.account.address,contracts:{charter,memory,market},verified_at:new Date().toISOString(),runner:'pinned in shared/networks.json',steps:journal.steps};
 fs.writeFileSync(`${output}.tmp`,JSON.stringify(result,null,2)+'\n');fs.renameSync(`${output}.tmp`,output);
 console.log(`Verified manifest written to ${output}`);

@@ -1,0 +1,31 @@
+name: Authorized contract rollout
+on:
+  workflow_dispatch:
+concurrency:
+  group: vantage-contract-rollout
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci
+      - name: Deploy and verify empty replacement market
+        env:
+          DEPLOYER_KEY: ${{ secrets.VANTAGE_DEPLOYER_KEY }}
+          VANTAGE_NETWORK: studionet
+        run: node deploy/redeploy-market.mjs
+      - name: Preserve public transaction recovery evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-contract-rollout
+          path: |
+            deployment-v2.pending.json
+            deployed_v2.json
+          retention-days: 30
