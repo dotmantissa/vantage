@@ -9,6 +9,7 @@ import { migrateV2 } from './schema.js';
 import {runOnce} from './runner.js';
 import {cronAuthorized} from './cron-auth.js';
 import {cachedRead} from './rpc-cache.js';
+import {pendingBroadcasts} from './queue.js';
 const router=express.Router();
 router.use((req,res,next)=>{try{if(req.query.deployment){if(req.path==='/cron')return res.status(400).json({error:'Keeper runs use the active deployment.'});return withDeployment(String(req.query.deployment),next);}next();}catch(error){res.status(error.status||500).json({error:error.message});}});
 let migration;
@@ -94,7 +95,7 @@ router.post('/transactions',requireAuth,route(async(req,res)=>{
   const actualMethod=tx?.txDataDecoded?.callData?.method||tx?.data?.calldata?.method;
   if(actualMethod&&actualMethod!==method)return res.status(400).json({error:'Tracking method differs from signed transaction'});
   if(destination!==config.contracts.market?.toLowerCase())return res.status(403).json({error:'Transaction does not target the configured market contract'});
-  await sql`INSERT INTO v2_transactions(network,tx_hash,actor,method,market_id) VALUES(${config.network},${hash},${req.user.address},${method},${market_id||null}) ON CONFLICT(network,tx_hash) DO NOTHING`;
+  await sql`INSERT INTO v2_transactions(network,contract,tx_hash,actor,method,market_id) VALUES(${config.network},${config.contracts.market},${hash},${req.user.address},${method},${market_id||null}) ON CONFLICT(network,tx_hash) DO UPDATE SET contract=EXCLUDED.contract`;
   await enqueue(sql,`track:${hash}`,'track',{hash});res.status(202).json({hash});
 }));
 router.get('/transactions/:hash',route(async(req,res)=>{
@@ -112,7 +113,8 @@ router.get('/health',route(async(_req,res)=>{
   await ready();const rows=await sql`SELECT state,count(*)::int AS count FROM v2_jobs GROUP BY state`;const lag=await sql`SELECT max(indexed_at) AS last_index FROM v2_markets WHERE network=${config.network}`;
   const runs=await sql`SELECT started_at,finished_at,body FROM v2_service_runs ORDER BY started_at DESC LIMIT 1`;
   const failures=await sql`SELECT id,kind,state,last_error,updated_at FROM v2_jobs WHERE last_error IS NOT NULL AND state IN ('failed','pending') ORDER BY updated_at DESC LIMIT 10`;
+  const pending=config.configured?await pendingBroadcasts(sql,config):[];
   const archive=process.env.VANTAGE_ARCHIVE==='postgres'?'postgres':process.env.R2_ENDPOINT&&process.env.R2_BUCKET&&process.env.R2_ACCESS_KEY_ID&&process.env.R2_SECRET_ACCESS_KEY?'r2':null;
-  res.json({status:'ok',configured:config.configured,jobs:rows,failures,last_index:lag[0]?.last_index,archive_configured:!!archive,archive_backend:archive,keeper_configured:!!(process.env.KEEPER_KEY&&process.env.CRON_SECRET),last_worker:runs[0]||null});
+  res.json({status:pending.length||failures.some(j=>j.state==='failed')?'degraded':'ok',configured:config.configured,jobs:rows,failures,pending_transactions:pending,last_index:lag[0]?.last_index,archive_configured:!!archive,archive_backend:archive,keeper_configured:!!(process.env.KEEPER_KEY&&process.env.CRON_SECRET),last_worker:runs[0]||null});
 }));
 export default router;
